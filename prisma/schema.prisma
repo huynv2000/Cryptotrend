@@ -1,0 +1,320 @@
+// Crypto Market Analytics Dashboard Database Schema
+// Designed for comprehensive crypto market analysis and trading recommendations
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  portfolio    Portfolio[]
+  alerts       Alert[]
+  watchlist    Watchlist[]
+  analysis     Analysis[]
+  addedCoins   Cryptocurrency[] @relation("AddedCoins")
+  
+  @@map("users")
+}
+
+// Cryptocurrency Information
+model Cryptocurrency {
+  id          String   @id @default(cuid())
+  symbol      String   @unique // BTC, ETH, etc.
+  name        String   // Bitcoin, Ethereum, etc.
+  coinGeckoId String   @unique // bitcoin, ethereum, etc.
+  logo        String?
+  rank        Int?
+  isActive    Boolean  @default(true) // Whether the coin is active for analysis
+  isDefault   Boolean  @default(false) // Whether it's a default coin (BTC, ETH, BNB, SOL)
+  addedBy     String?  // User ID who added this coin (null for default coins)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  priceHistory        PriceHistory[]
+  onChainMetrics      OnChainMetric[]
+  technicalIndicators TechnicalIndicator[]
+  sentimentMetrics    SentimentMetric[]
+  derivativeMetrics  DerivativeMetric[]
+  volumeHistory       VolumeHistory[]
+  watchlist           Watchlist[]
+  portfolio           Portfolio[]
+  alerts              Alert[]
+  analysis            Analysis[]
+  analysisHistory     AnalysisHistory[]
+  dataCollection      CoinDataCollection?
+  addedByUser         User?            @relation("AddedCoins", fields: [addedBy], references: [id])
+  
+  @@map("cryptocurrencies")
+}
+
+// Price History Data
+model PriceHistory {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  price        Float
+  volume24h    Float?
+  marketCap    Float?
+  priceChange24h Float?
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("price_history")
+}
+
+// Volume History Data (for 90-day volume analysis)
+model VolumeHistory {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  dailyVolume  Float    // Daily trading volume
+  price        Float?   // Price at the time of volume
+  exchangeVolume String? // JSON string with volume by exchange
+  volumeChange24h Float? // 24h volume change percentage
+  volumeAvg30d  Float?   // 30-day moving average of volume
+  volumeVsAvg   Float?   // Current volume vs 30-day average (percentage)
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("volume_history")
+}
+
+// On-chain Metrics
+model OnChainMetric {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  
+  // Core On-chain Metrics
+  mvrv         Float?   // Market Value to Realized Value
+  nupl         Float?   // Net Unrealized Profit/Loss
+  sopr         Float?   // Spent Output Profit Ratio
+  activeAddresses Int?   // Number of active addresses
+  exchangeInflow  Float? // Exchange inflow volume
+  exchangeOutflow Float? // Exchange outflow volume
+  transactionVolume Float? // On-chain transaction volume
+  supplyDistribution Json? // Supply distribution data (whale/retail/exchange holdings)
+  whaleHoldingsPercentage Float? // Percentage held by whales
+  retailHoldingsPercentage Float? // Percentage held by retail
+  exchangeHoldingsPercentage Float? // Percentage held by exchanges
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("on_chain_metrics")
+}
+
+// Technical Indicators
+model TechnicalIndicator {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  
+  // Technical Analysis Indicators
+  rsi          Float?   // Relative Strength Index
+  ma50         Float?   // 50-day Moving Average
+  ma200        Float?   // 200-day Moving Average
+  macd         Float?   // MACD line
+  macdSignal   Float?   // MACD signal line
+  bollingerUpper Float? // Bollinger Bands upper
+  bollingerLower Float? // Bollinger Bands lower
+  bollingerMiddle Float? // Bollinger Bands middle
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("technical_indicators")
+}
+
+// Market Sentiment Metrics
+model SentimentMetric {
+  id           String   @id @default(cuid())
+  timestamp    DateTime
+  
+  // Sentiment Indicators
+  fearGreedIndex    Float? // Fear & Greed Index (0-100)
+  socialSentiment   Float? // Social media sentiment score
+  googleTrends      Float? // Google trends score
+  newsSentiment     Float? // News sentiment score
+  
+  // Relations
+  cryptocurrencies Cryptocurrency[]
+  
+  @@unique([timestamp])
+  @@map("sentiment_metrics")
+}
+
+// Derivative Metrics
+model DerivativeMetric {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  
+  // Derivatives Market Data
+  openInterest   Float? // Total open interest
+  fundingRate    Float? // Funding rate
+  liquidationVolume Float? // Liquidation volume
+  putCallRatio   Float? // Put/Call ratio
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("derivative_metrics")
+}
+
+// User Portfolio
+model Portfolio {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String
+  amount       Float
+  avgBuyPrice  Float
+  currentValue Float?
+  profitLoss   Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, cryptoId])
+  @@map("portfolios")
+}
+
+// User Watchlist
+model Watchlist {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String
+  createdAt    DateTime @default(now())
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, cryptoId])
+  @@map("watchlists")
+}
+
+// Alert System
+model Alert {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String?
+  type         AlertType
+  condition    String   // JSON string for complex conditions
+  isActive     Boolean  @default(true)
+  triggered    Boolean  @default(false)
+  triggeredAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency? @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@map("alerts")
+}
+
+// AI Analysis and Recommendations
+model Analysis {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String?
+  type         AnalysisType
+  signal       SignalType // BUY, SELL, HOLD
+  confidence   Float    // 0-1 confidence score
+  reasoning    String   // AI reasoning for the recommendation
+  metricsData  Json?   // JSON string with metrics used for analysis
+  timestamp    DateTime @default(now())
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency? @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@map("analysis")
+}
+
+// AI Analysis History (for automated analysis)
+model AnalysisHistory {
+  id          String   @id @default(cuid())
+  cryptoId    String
+  coinId      String   // CoinGecko ID for easier lookup
+  signal      String   // BUY, SELL, HOLD, STRONG_BUY, STRONG_SELL, MUA, BÁN, GIỮ, MUA MẠNH, BÁN MẠNH
+  confidence  Float    // 0-100 confidence score
+  reasoning   String   // AI reasoning for the recommendation
+  riskLevel   String   // LOW, MEDIUM, HIGH
+  aiModel     String   // AI model used for analysis
+  analysisType String? // Type of analysis (AI_ENHANCED, TECHNICAL, ON_CHAIN, etc.)
+  analysisData Json?   // JSON string with complete analysis data
+  metricsData Json?   // JSON string with metrics used for analysis (legacy)
+  timestamp   DateTime @default(now())
+  
+  crypto      Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@index([cryptoId, timestamp])
+  @@index([coinId, timestamp])
+  @@index([analysisType, timestamp])
+  @@map("analysis_history")
+}
+
+// Coin Data Collection Status
+model CoinDataCollection {
+  id          String   @id @default(cuid())
+  cryptoId    String   @unique
+  status      CollectionStatus @default(PENDING)
+  lastCollected DateTime?
+  nextCollection DateTime?
+  errorCount  Int      @default(0)
+  lastError   String?
+  metadata    Json?  // JSON string with collection metadata
+  
+  crypto      Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@map("coin_data_collection")
+}
+
+// Enums
+enum AlertType {
+  PRICE_ALERT
+  METRIC_ALERT
+  TECHNICAL_ALERT
+  SENTIMENT_ALERT
+  DERIVATIVE_ALERT
+}
+
+enum AnalysisType {
+  MARKET_OVERVIEW
+  COIN_SPECIFIC
+  PORTFOLIO_ANALYSIS
+  RISK_ASSESSMENT
+}
+
+enum SignalType {
+  BUY
+  SELL
+  HOLD
+  STRONG_BUY
+  STRONG_SELL
+}
+
+enum CollectionStatus {
+  PENDING
+  COLLECTING
+  COMPLETED
+  FAILED
+  RETRYING
+}
