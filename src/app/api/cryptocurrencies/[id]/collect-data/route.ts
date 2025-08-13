@@ -1,56 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
-// POST /api/cryptocurrencies/[id]/collect-data - Trigger manual data collection
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // First try to find by symbol (case insensitive)
-    let cryptocurrency = await db.cryptocurrency.findFirst({
-      where: { symbol: params.id.toUpperCase() },
-      include: { dataCollection: true }
-    })
+    // Update or create coin data collection record
+    await db.run(`
+      INSERT OR REPLACE INTO coin_data_collection 
+      (cryptoId, status, lastCollected, nextCollection, errorCount, metadata)
+      VALUES (?, ?, datetime('now'), datetime('now', '+1 hour'), 0, '{}')
+    `, [params.id]);
     
-    // If not found by symbol, try to find by ID
-    if (!cryptocurrency) {
-      cryptocurrency = await db.cryptocurrency.findUnique({
-        where: { id: params.id },
-        include: { dataCollection: true }
-      })
-    }
-    
-    if (!cryptocurrency) {
-      return NextResponse.json(
-        { error: 'Cryptocurrency not found' },
-        { status: 404 }
-      )
-    }
-    
-    // Update collection status
-    await db.coinDataCollection.update({
-      where: { cryptoId: cryptocurrency.id },
-      data: { 
-        status: 'COLLECTING',
-        nextCollection: new Date()
-      }
-    })
-    
-    // Import and trigger data collection
-    const { triggerDataCollection } = await import('@/app/api/cryptocurrencies/route')
-    triggerDataCollection(cryptocurrency.id).catch(console.error)
-    
-    return NextResponse.json({
-      message: 'Data collection triggered successfully',
-      coin: cryptocurrency.symbol
-    })
-    
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error triggering data collection:', error)
+    console.error('Error triggering data collection:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to trigger data collection' },
       { status: 500 }
-    )
+    );
   }
 }

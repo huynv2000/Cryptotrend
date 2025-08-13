@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { ResolutionProvider } from "@/contexts/ResolutionContext";
 
 export const metadata: Metadata = {
   title: "Crypto Analytics Dashboard Pro",
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground">
-        {children}
+        <ResolutionProvider>
+          {children}
+        </ResolutionProvider>
         <Toaster />
       </body>
     </html>

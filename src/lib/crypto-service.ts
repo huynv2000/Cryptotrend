@@ -106,12 +106,19 @@ export class CoinGeckoService {
         })
 
         if (latestPriceData) {
-          console.log(`📊 Using latest price data from database for ${cryptocurrency.symbol}: $${latestPriceData.price}`)
+          const lastUpdateTime = new Date(latestPriceData.timestamp)
+          const now = new Date()
+          const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+          
+          console.log(`📊 Using latest price data from database for ${cryptocurrency.symbol}: $${latestPriceData.price} (${hoursAgo}h ago)`)
           return {
             usd: latestPriceData.price,
             usd_24h_change: latestPriceData.priceChange24h || 0,
             usd_24h_vol: latestPriceData.volume24h || 0,
-            usd_market_cap: latestPriceData.marketCap || 0
+            usd_market_cap: latestPriceData.marketCap || 0,
+            last_updated: latestPriceData.timestamp,
+            is_outdated: true,
+            hours_ago: hoursAgo
           }
         }
       }
@@ -122,77 +129,48 @@ export class CoinGeckoService {
       })
 
       if (anyLatestPrice) {
-        console.log(`📊 Using latest available price data for ${coinId}: $${anyLatestPrice.price}`)
+        const lastUpdateTime = new Date(anyLatestPrice.timestamp)
+        const now = new Date()
+        const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+        
+        console.log(`📊 Using latest available price data for ${coinId}: $${anyLatestPrice.price} (${hoursAgo}h ago)`)
         return {
           usd: anyLatestPrice.price,
           usd_24h_change: anyLatestPrice.priceChange24h || 0,
           usd_24h_vol: anyLatestPrice.volume24h || 0,
-          usd_market_cap: anyLatestPrice.marketCap || 0
+          usd_market_cap: anyLatestPrice.marketCap || 0,
+          last_updated: anyLatestPrice.timestamp,
+          is_outdated: true,
+          hours_ago: hoursAgo
         }
       }
 
-      // Only use hardcoded data if absolutely no data is available
-      console.log(`⚠️ No historical data found, using hardcoded fallback for ${coinId}`)
-      return this.getHardcodedFallbackData(coinId)
+      // Return N/A instead of hardcoded data
+      console.log(`⚠️ No historical data found for ${coinId}, returning N/A`)
+      return {
+        usd: null,
+        usd_24h_change: null,
+        usd_24h_vol: null,
+        usd_market_cap: null,
+        error: "N/A - No data available"
+      }
     } catch (error) {
       console.error(`❌ Error getting fallback data for ${coinId}:`, error)
-      return this.getHardcodedFallbackData(coinId)
+      // Return N/A instead of hardcoded data
+      return {
+        usd: null,
+        usd_24h_change: null,
+        usd_24h_vol: null,
+        usd_market_cap: null,
+        error: "N/A - Database error"
+      }
     }
   }
 
   /**
-   * Get hardcoded fallback data as last resort
+   * Note: Hardcoded fallback data removed as per requirements
+   * System now returns N/A when no data is available
    */
-  private getHardcodedFallbackData(coinId: string) {
-    const fallbackData: Record<string, any> = {
-      bitcoin: {
-        usd: 116627.00,
-        usd_24h_change: 1.46,
-        usd_24h_vol: 43043699449,
-        usd_market_cap: 2321404684888
-      },
-      ethereum: {
-        usd: 3895.84,
-        usd_24h_change: 4.74,
-        usd_24h_vol: 38056175305,
-        usd_market_cap: 470352765059
-      },
-      binancecoin: {
-        usd: 786.25,
-        usd_24h_change: 2.69,
-        usd_24h_vol: 1305142628,
-        usd_market_cap: 109525986934
-      },
-      solana: {
-        usd: 175.62,
-        usd_24h_change: 3.76,
-        usd_24h_vol: 6577578953,
-        usd_market_cap: 94687148086
-      },
-      ethena: {
-        usd: 0.85,
-        usd_24h_change: 2.1,
-        usd_24h_vol: 15000000,
-        usd_market_cap: 320000000
-      }
-    }
-
-    // If coin exists in fallback data, return it
-    if (fallbackData[coinId]) {
-      return fallbackData[coinId]
-    }
-
-    // Generate realistic fallback data for unknown coins
-    const basePrice = 100 + Math.random() * 1000 // Random between $100 and $1100
-    const changePercent = (Math.random() - 0.5) * 10 // Random between -5% and +5%
-    
-    return {
-      usd: basePrice,
-      usd_24h_change: changePercent,
-      usd_24h_vol: basePrice * (1000000 + Math.random() * 10000000), // Volume based on price
-      usd_market_cap: basePrice * (100000000 + Math.random() * 1000000000) // Market cap based on price
-    }
-  }
 
   async getCoinMarkets(vsCurrency: string = 'usd', order: string = 'market_cap_desc', perPage: number = 100, page: number = 1) {
     await this.rateLimit()
@@ -286,32 +264,12 @@ export class CoinGeckoService {
   }
 
   private getFallbackMarketChart(coinId: string, days: number): any {
-    const knownFallbacks: Record<string, { price: number; volume: number }> = {
-      bitcoin: { price: 116627, volume: 43043699449 },
-      ethereum: { price: 3895.84, volume: 38056175305 },
-      binancecoin: { price: 786.25, volume: 1305142628 },
-      solana: { price: 175.62, volume: 6577578953 }
+    console.log(`⚠️ No market chart data available for ${coinId}, returning empty data`)
+    return {
+      prices: [],
+      total_volumes: [],
+      error: "N/A - No chart data available"
     }
-    
-    const fallback = knownFallbacks[coinId] || { 
-      price: 100 + Math.random() * 1000, 
-      volume: 1000000 + Math.random() * 10000000 
-    }
-    
-    const prices: [number, number][] = []
-    const volumes: [number, number][] = []
-    const now = Date.now()
-    
-    for (let i = days; i >= 0; i--) {
-      const timestamp = now - (i * 24 * 60 * 60 * 1000)
-      const priceVariation = (Math.random() - 0.5) * 0.02
-      const volumeVariation = (Math.random() - 0.5) * 0.3
-      
-      prices.push([timestamp, fallback.price * (1 + priceVariation)] as [number, number])
-      volumes.push([timestamp, fallback.volume * (1 + volumeVariation)] as [number, number])
-    }
-    
-    return { prices, total_volumes: volumes }
   }
 }
 
@@ -337,494 +295,493 @@ export class FearGreedService {
   }
 }
 
-// Mock data for on-chain metrics (in real implementation, you'd use Glassnode/CryptoQuant APIs)
+// On-chain metrics service
 export class OnChainMetricsService {
   static async getOnChainMetrics(coinId: string) {
-    // Base mock data structure that can be applied to any coin
-    const baseMockData = {
-      mvrv: 1.5 + (Math.random() - 0.5) * 1.0, // Random between 1.0 and 2.0
-      nupl: 0.5 + (Math.random() - 0.5) * 0.6, // Random between 0.2 and 0.8
-      sopr: 1.0 + (Math.random() - 0.5) * 0.2, // Random between 0.9 and 1.1
-      activeAddresses: Math.floor(100000 + Math.random() * 900000), // Random between 100k and 1M
-      exchangeInflow: Math.floor(5000 + Math.random() * 15000), // Random between 5k and 20k
-      exchangeOutflow: Math.floor(5000 + Math.random() * 15000), // Random between 5k and 20k
-      transactionVolume: Math.floor(10000000000 + Math.random() * 20000000000), // Random between 10B and 30B
-      supplyDistribution: {
-        whaleHoldings: { percentage: 35 + Math.random() * 20, addressCount: Math.floor(500 + Math.random() * 1000) },
-        retailHoldings: { percentage: 35 + Math.random() * 20, addressCount: Math.floor(10000000 + Math.random() * 50000000) },
-        exchangeHoldings: { percentage: 8 + Math.random() * 8, addressCount: Math.floor(100 + Math.random() * 200) },
-        otherHoldings: { percentage: 5 + Math.random() * 10, addressCount: Math.floor(50000 + Math.random() * 200000) }
-      },
-      whaleHoldingsPercentage: 0,
-      retailHoldingsPercentage: 0,
-      exchangeHoldingsPercentage: 0
-    }
+    try {
+      // Import database here to avoid circular dependency
+      const { db } = await import('@/lib/db')
+      
+      // Try to find the cryptocurrency by coinGeckoId
+      const cryptocurrency = await db.cryptocurrency.findFirst({
+        where: { coinGeckoId: coinId }
+      })
 
-    // Calculate percentages from supply distribution
-    baseMockData.whaleHoldingsPercentage = baseMockData.supplyDistribution.whaleHoldings.percentage
-    baseMockData.retailHoldingsPercentage = baseMockData.supplyDistribution.retailHoldings.percentage
-    baseMockData.exchangeHoldingsPercentage = baseMockData.supplyDistribution.exchangeHoldings.percentage
+      if (cryptocurrency) {
+        // Get the most recent on-chain metrics from database
+        const latestMetrics = await db.onChainMetric.findFirst({
+          where: { cryptoId: cryptocurrency.id },
+          orderBy: { timestamp: 'desc' }
+        })
 
-    // Specific adjustments for known coins
-    const knownCoinAdjustments: Record<string, Partial<any>> = {
-      bitcoin: {
-        mvrv: 1.8,
-        nupl: 0.65,
-        sopr: 1.02,
-        activeAddresses: 950000,
-        exchangeInflow: 15000,
-        exchangeOutflow: 12000,
-        transactionVolume: 25000000000,
-        supplyDistribution: {
-          whaleHoldings: { percentage: 42.3, addressCount: 850 },
-          retailHoldings: { percentage: 38.7, addressCount: 42000000 },
-          exchangeHoldings: { percentage: 12.5, addressCount: 150 },
-          otherHoldings: { percentage: 6.5, addressCount: 120000 }
-        }
-      },
-      ethereum: {
-        mvrv: 1.2,
-        nupl: 0.45,
-        sopr: 0.98,
-        activeAddresses: 450000,
-        exchangeInflow: 8500,
-        exchangeOutflow: 9200,
-        transactionVolume: 15000000000,
-        supplyDistribution: {
-          whaleHoldings: { percentage: 38.5, addressCount: 1200 },
-          retailHoldings: { percentage: 45.2, addressCount: 85000000 },
-          exchangeHoldings: { percentage: 11.8, addressCount: 200 },
-          otherHoldings: { percentage: 4.5, addressCount: 350000 }
-        }
-      },
-      binancecoin: {
-        mvrv: 1.4,
-        nupl: 0.55,
-        sopr: 1.01,
-        activeAddresses: 280000,
-        exchangeInflow: 6500,
-        exchangeOutflow: 7200,
-        transactionVolume: 8500000000,
-        supplyDistribution: {
-          whaleHoldings: { percentage: 45.2, addressCount: 420 },
-          retailHoldings: { percentage: 35.8, addressCount: 25000000 },
-          exchangeHoldings: { percentage: 15.5, addressCount: 85 },
-          otherHoldings: { percentage: 3.5, addressCount: 180000 }
-        }
-      },
-      solana: {
-        mvrv: 1.6,
-        nupl: 0.58,
-        sopr: 1.05,
-        activeAddresses: 320000,
-        exchangeInflow: 4800,
-        exchangeOutflow: 5200,
-        transactionVolume: 6200000000,
-        supplyDistribution: {
-          whaleHoldings: { percentage: 41.8, addressCount: 680 },
-          retailHoldings: { percentage: 42.1, addressCount: 18000000 },
-          exchangeHoldings: { percentage: 10.2, addressCount: 120 },
-          otherHoldings: { percentage: 5.9, addressCount: 95000 }
+        if (latestMetrics) {
+          const lastUpdateTime = new Date(latestMetrics.timestamp)
+          const now = new Date()
+          const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+          
+          console.log(`📊 Using latest on-chain metrics from database for ${cryptocurrency.symbol} (${hoursAgo}h ago)`)
+          return {
+            ...latestMetrics,
+            last_updated: latestMetrics.timestamp,
+            is_outdated: true,
+            hours_ago: hoursAgo
+          }
         }
       }
-    }
 
-    // Apply known coin adjustments if available, otherwise use base mock data
-    const mockData = {
-      ...baseMockData,
-      ...knownCoinAdjustments[coinId],
-      supplyDistribution: {
-        ...baseMockData.supplyDistribution,
-        ...knownCoinAdjustments[coinId]?.supplyDistribution
+      // If no specific data, get the most recent on-chain metrics from any cryptocurrency
+      const anyLatestMetrics = await db.onChainMetric.findFirst({
+        orderBy: { timestamp: 'desc' }
+      })
+
+      if (anyLatestMetrics) {
+        const lastUpdateTime = new Date(anyLatestMetrics.timestamp)
+        const now = new Date()
+        const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+        
+        console.log(`📊 Using latest available on-chain metrics for ${coinId} (${hoursAgo}h ago)`)
+        return {
+          ...anyLatestMetrics,
+          last_updated: anyLatestMetrics.timestamp,
+          is_outdated: true,
+          hours_ago: hoursAgo
+        }
+      }
+
+      // Return N/A instead of mock data
+      console.log(`⚠️ No on-chain metrics found for ${coinId}, returning N/A`)
+      return {
+        mvrv: null,
+        nupl: null,
+        sopr: null,
+        activeAddresses: null,
+        exchangeInflow: null,
+        exchangeOutflow: null,
+        transactionVolume: null,
+        supplyDistribution: null,
+        whaleHoldingsPercentage: null,
+        retailHoldingsPercentage: null,
+        exchangeHoldingsPercentage: null,
+        error: "N/A - No on-chain data available"
+      }
+    } catch (error) {
+      console.error(`❌ Error getting on-chain metrics for ${coinId}:`, error)
+      // Return N/A instead of mock data
+      return {
+        mvrv: null,
+        nupl: null,
+        sopr: null,
+        activeAddresses: null,
+        exchangeInflow: null,
+        exchangeOutflow: null,
+        transactionVolume: null,
+        supplyDistribution: null,
+        whaleHoldingsPercentage: null,
+        retailHoldingsPercentage: null,
+        exchangeHoldingsPercentage: null,
+        error: "N/A - Database error"
       }
     }
-
-    // Recalculate percentages
-    mockData.whaleHoldingsPercentage = mockData.supplyDistribution.whaleHoldings.percentage
-    mockData.retailHoldingsPercentage = mockData.supplyDistribution.retailHoldings.percentage
-    mockData.exchangeHoldingsPercentage = mockData.supplyDistribution.exchangeHoldings.percentage
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    return mockData
   }
 }
 
-// Mock technical indicators service
+// Technical indicators service
 export class TechnicalIndicatorsService {
   static async getTechnicalIndicators(coinId: string) {
-    // Get base price from fallback data to calculate realistic technical indicators
-    const fallbackData = new CoinGeckoService().getFallbackData(coinId)
-    const basePrice = fallbackData?.usd || 50000
-    
-    // Generate realistic technical indicators based on base price
-    const mockData = {
-      rsi: 45 + Math.random() * 30, // Random between 45 and 75
-      ma50: basePrice * (0.95 + Math.random() * 0.1), // ±5% from base price
-      ma200: basePrice * (0.9 + Math.random() * 0.2), // ±10% from base price
-      macd: (Math.random() - 0.5) * basePrice * 0.02, // ±1% of base price
-      bollingerUpper: basePrice * (1.05 + Math.random() * 0.05), // +5% to +10%
-      bollingerLower: basePrice * (0.95 - Math.random() * 0.05), // -5% to -10%
-      bollingerMiddle: basePrice
-    }
+    try {
+      // Import database here to avoid circular dependency
+      const { db } = await import('@/lib/db')
+      
+      // Try to find the cryptocurrency by coinGeckoId
+      const cryptocurrency = await db.cryptocurrency.findFirst({
+        where: { coinGeckoId: coinId }
+      })
 
-    // Specific adjustments for known coins
-    const knownCoinAdjustments: Record<string, Partial<any>> = {
-      bitcoin: {
-        rsi: 58.5,
-        ma50: 112000,
-        ma200: 108000,
-        macd: 145.5,
-        bollingerUpper: 122000,
-        bollingerLower: 111000,
-        bollingerMiddle: 116627
-      },
-      ethereum: {
-        rsi: 62.3,
-        ma50: 3750,
-        ma200: 3550,
-        macd: 85.2,
-        bollingerUpper: 4150,
-        bollingerLower: 3640,
-        bollingerMiddle: 3895.84
-      },
-      binancecoin: {
-        rsi: 55.8,
-        ma50: 765,
-        ma200: 742,
-        macd: 12.3,
-        bollingerUpper: 845,
-        bollingerLower: 728,
-        bollingerMiddle: 786.25
-      },
-      solana: {
-        rsi: 61.2,
-        ma50: 168,
-        ma200: 162,
-        macd: 8.7,
-        bollingerUpper: 192,
-        bollingerLower: 159,
-        bollingerMiddle: 175.62
+      if (cryptocurrency) {
+        // Get the most recent technical indicators from database
+        const latestIndicators = await db.technicalIndicator.findFirst({
+          where: { cryptoId: cryptocurrency.id },
+          orderBy: { timestamp: 'desc' }
+        })
+
+        if (latestIndicators) {
+          const lastUpdateTime = new Date(latestIndicators.timestamp)
+          const now = new Date()
+          const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+          
+          console.log(`📊 Using latest technical indicators from database for ${cryptocurrency.symbol} (${hoursAgo}h ago)`)
+          return {
+            ...latestIndicators,
+            last_updated: latestIndicators.timestamp,
+            is_outdated: true,
+            hours_ago: hoursAgo
+          }
+        }
+      }
+
+      // If no specific data, get the most recent technical indicators from any cryptocurrency
+      const anyLatestIndicators = await db.technicalIndicator.findFirst({
+        orderBy: { timestamp: 'desc' }
+      })
+
+      if (anyLatestIndicators) {
+        const lastUpdateTime = new Date(anyLatestIndicators.timestamp)
+        const now = new Date()
+        const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+        
+        console.log(`📊 Using latest available technical indicators for ${coinId} (${hoursAgo}h ago)`)
+        return {
+          ...anyLatestIndicators,
+          last_updated: anyLatestIndicators.timestamp,
+          is_outdated: true,
+          hours_ago: hoursAgo
+        }
+      }
+
+      // Return N/A instead of mock data
+      console.log(`⚠️ No technical indicators found for ${coinId}, returning N/A`)
+      return {
+        rsi: null,
+        ma50: null,
+        ma200: null,
+        macd: null,
+        bollingerUpper: null,
+        bollingerLower: null,
+        bollingerMiddle: null,
+        error: "N/A - No technical indicators available"
+      }
+    } catch (error) {
+      console.error(`❌ Error getting technical indicators for ${coinId}:`, error)
+      // Return N/A instead of mock data
+      return {
+        rsi: null,
+        ma50: null,
+        ma200: null,
+        macd: null,
+        bollingerUpper: null,
+        bollingerLower: null,
+        bollingerMiddle: null,
+        error: "N/A - Database error"
       }
     }
-
-    // Apply known coin adjustments if available, otherwise use generated mock data
-    const finalData = {
-      ...mockData,
-      ...knownCoinAdjustments[coinId]
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    return finalData
   }
 }
 
-// Mock derivatives data service
+// Derivatives data service
 export class DerivativesService {
   static async getDerivativesData(coinId: string) {
-    // Get base price from fallback data to calculate realistic derivatives metrics
-    const fallbackData = new CoinGeckoService().getFallbackData(coinId)
-    const basePrice = fallbackData?.usd || 50000
-    const marketCap = fallbackData?.usd_market_cap || 1000000000000
-    
-    // Generate realistic derivatives data based on market cap
-    const mockData = {
-      openInterest: marketCap * (0.01 + Math.random() * 0.02), // 1-3% of market cap
-      fundingRate: (Math.random() - 0.5) * 0.04, // Random between -0.02 and +0.02
-      liquidationVolume: Math.floor(10000000 + Math.random() * 40000000), // $10M to $50M
-      putCallRatio: 0.7 + Math.random() * 0.6 // Random between 0.7 and 1.3
-    }
+    try {
+      // Import database here to avoid circular dependency
+      const { db } = await import('@/lib/db')
+      
+      // Try to find the cryptocurrency by coinGeckoId
+      const cryptocurrency = await db.cryptocurrency.findFirst({
+        where: { coinGeckoId: coinId }
+      })
 
-    // Specific adjustments for known coins
-    const knownCoinAdjustments: Record<string, Partial<any>> = {
-      bitcoin: {
-        openInterest: 18500000000,
-        fundingRate: 0.0125,
-        liquidationVolume: 45000000,
-        putCallRatio: 0.85
-      },
-      ethereum: {
-        openInterest: 8500000000,
-        fundingRate: 0.0085,
-        liquidationVolume: 28000000,
-        putCallRatio: 0.92
-      },
-      binancecoin: {
-        openInterest: 2200000000,
-        fundingRate: 0.0065,
-        liquidationVolume: 15000000,
-        putCallRatio: 0.78
-      },
-      solana: {
-        openInterest: 1800000000,
-        fundingRate: 0.0095,
-        liquidationVolume: 12000000,
-        putCallRatio: 0.88
+      if (cryptocurrency) {
+        // Get the most recent derivatives data from database
+        const latestDerivatives = await db.derivative.findFirst({
+          where: { cryptoId: cryptocurrency.id },
+          orderBy: { timestamp: 'desc' }
+        })
+
+        if (latestDerivatives) {
+          const lastUpdateTime = new Date(latestDerivatives.timestamp)
+          const now = new Date()
+          const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+          
+          console.log(`📊 Using latest derivatives data from database for ${cryptocurrency.symbol} (${hoursAgo}h ago)`)
+          return {
+            ...latestDerivatives,
+            last_updated: latestDerivatives.timestamp,
+            is_outdated: true,
+            hours_ago: hoursAgo
+          }
+        }
+      }
+
+      // If no specific data, get the most recent derivatives data from any cryptocurrency
+      const anyLatestDerivatives = await db.derivative.findFirst({
+        orderBy: { timestamp: 'desc' }
+      })
+
+      if (anyLatestDerivatives) {
+        const lastUpdateTime = new Date(anyLatestDerivatives.timestamp)
+        const now = new Date()
+        const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+        
+        console.log(`📊 Using latest available derivatives data for ${coinId} (${hoursAgo}h ago)`)
+        return {
+          ...anyLatestDerivatives,
+          last_updated: anyLatestDerivatives.timestamp,
+          is_outdated: true,
+          hours_ago: hoursAgo
+        }
+      }
+
+      // Return N/A instead of mock data
+      console.log(`⚠️ No derivatives data found for ${coinId}, returning N/A`)
+      return {
+        openInterest: null,
+        fundingRate: null,
+        liquidationVolume: null,
+        putCallRatio: null,
+        error: "N/A - No derivatives data available"
+      }
+    } catch (error) {
+      console.error(`❌ Error getting derivatives data for ${coinId}:`, error)
+      // Return N/A instead of mock data
+      return {
+        openInterest: null,
+        fundingRate: null,
+        liquidationVolume: null,
+        putCallRatio: null,
+        error: "N/A - Database error"
       }
     }
-
-    // Apply known coin adjustments if available, otherwise use generated mock data
-    const finalData = {
-      ...mockData,
-      ...knownCoinAdjustments[coinId]
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 400))
-    
-    return finalData
   }
 }
 
-// Mock social sentiment service (Twitter, Reddit)
+// Social sentiment service (Twitter, Reddit)
 export class SocialSentimentService {
   static async getSocialSentiment(coinId: string) {
-    // Generate realistic social sentiment data for any coin
-    const mockData = {
-      twitterSentiment: 0.5 + Math.random() * 0.3, // Random between 0.5 and 0.8
-      redditSentiment: 0.5 + Math.random() * 0.3, // Random between 0.5 and 0.8
-      socialVolume: Math.floor(20000 + Math.random() * 40000), // Random between 20k and 60k
-      engagementRate: 0.05 + Math.random() * 0.1, // Random between 0.05 and 0.15
-      influencerSentiment: 0.6 + Math.random() * 0.25, // Random between 0.6 and 0.85
-      trendingScore: Math.floor(60 + Math.random() * 30) // Random between 60 and 90
-    }
+    try {
+      // Import database here to avoid circular dependency
+      const { db } = await import('@/lib/db')
+      
+      // Try to find the cryptocurrency by coinGeckoId
+      const cryptocurrency = await db.cryptocurrency.findFirst({
+        where: { coinGeckoId: coinId }
+      })
 
-    // Specific adjustments for known coins
-    const knownCoinAdjustments: Record<string, Partial<any>> = {
-      bitcoin: {
-        twitterSentiment: 0.68,
-        redditSentiment: 0.72,
-        socialVolume: 45000,
-        engagementRate: 0.085,
-        influencerSentiment: 0.75,
-        trendingScore: 85
-      },
-      ethereum: {
-        twitterSentiment: 0.65,
-        redditSentiment: 0.70,
-        socialVolume: 38000,
-        engagementRate: 0.078,
-        influencerSentiment: 0.72,
-        trendingScore: 78
-      },
-      binancecoin: {
-        twitterSentiment: 0.62,
-        redditSentiment: 0.68,
-        socialVolume: 28000,
-        engagementRate: 0.065,
-        influencerSentiment: 0.70,
-        trendingScore: 72
-      },
-      solana: {
-        twitterSentiment: 0.71,
-        redditSentiment: 0.74,
-        socialVolume: 32000,
-        engagementRate: 0.082,
-        influencerSentiment: 0.78,
-        trendingScore: 81
+      if (cryptocurrency) {
+        // Get the most recent social sentiment from database
+        const latestSentiment = await db.socialSentiment.findFirst({
+          where: { cryptoId: cryptocurrency.id },
+          orderBy: { timestamp: 'desc' }
+        })
+
+        if (latestSentiment) {
+          const lastUpdateTime = new Date(latestSentiment.timestamp)
+          const now = new Date()
+          const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+          
+          console.log(`📊 Using latest social sentiment from database for ${cryptocurrency.symbol} (${hoursAgo}h ago)`)
+          return {
+            ...latestSentiment,
+            last_updated: latestSentiment.timestamp,
+            is_outdated: true,
+            hours_ago: hoursAgo
+          }
+        }
+      }
+
+      // If no specific data, get the most recent social sentiment from any cryptocurrency
+      const anyLatestSentiment = await db.socialSentiment.findFirst({
+        orderBy: { timestamp: 'desc' }
+      })
+
+      if (anyLatestSentiment) {
+        const lastUpdateTime = new Date(anyLatestSentiment.timestamp)
+        const now = new Date()
+        const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+        
+        console.log(`📊 Using latest available social sentiment for ${coinId} (${hoursAgo}h ago)`)
+        return {
+          ...anyLatestSentiment,
+          last_updated: anyLatestSentiment.timestamp,
+          is_outdated: true,
+          hours_ago: hoursAgo
+        }
+      }
+
+      // Return N/A instead of mock data
+      console.log(`⚠️ No social sentiment found for ${coinId}, returning N/A`)
+      return {
+        twitterSentiment: null,
+        redditSentiment: null,
+        socialVolume: null,
+        engagementRate: null,
+        influencerSentiment: null,
+        trendingScore: null,
+        error: "N/A - No social sentiment available"
+      }
+    } catch (error) {
+      console.error(`❌ Error getting social sentiment for ${coinId}:`, error)
+      // Return N/A instead of mock data
+      return {
+        twitterSentiment: null,
+        redditSentiment: null,
+        socialVolume: null,
+        engagementRate: null,
+        influencerSentiment: null,
+        trendingScore: null,
+        error: "N/A - Database error"
       }
     }
-
-    // Apply known coin adjustments if available, otherwise use generated mock data
-    const finalData = {
-      ...mockData,
-      ...knownCoinAdjustments[coinId]
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 600))
-    
-    return finalData
   }
 }
 
-// Mock news sentiment service
+// News sentiment service
 export class NewsSentimentService {
   static async getNewsSentiment(coinId: string) {
-    // Generate realistic news sentiment data for any coin
-    const totalNews = Math.floor(500 + Math.random() * 1000) // Random between 500 and 1500
-    const positiveRatio = 0.5 + Math.random() * 0.2 // Random between 0.5 and 0.7
-    const negativeRatio = 0.2 + Math.random() * 0.2 // Random between 0.2 and 0.4
-    
-    const mockData = {
-      newsSentiment: 0.5 + Math.random() * 0.2, // Random between 0.5 and 0.7
-      newsVolume: totalNews,
-      positiveNewsCount: Math.floor(totalNews * positiveRatio),
-      negativeNewsCount: Math.floor(totalNews * negativeRatio),
-      neutralNewsCount: totalNews - Math.floor(totalNews * positiveRatio) - Math.floor(totalNews * negativeRatio),
-      sentimentScore: 0.5 + Math.random() * 0.2, // Random between 0.5 and 0.7
-      buzzScore: Math.floor(60 + Math.random() * 25) // Random between 60 and 85
-    }
+    try {
+      // Import database here to avoid circular dependency
+      const { db } = await import('@/lib/db')
+      
+      // Try to find the cryptocurrency by coinGeckoId
+      const cryptocurrency = await db.cryptocurrency.findFirst({
+        where: { coinGeckoId: coinId }
+      })
 
-    // Specific adjustments for known coins
-    const knownCoinAdjustments: Record<string, Partial<any>> = {
-      bitcoin: {
-        newsSentiment: 0.62,
-        newsVolume: 1250,
-        positiveNewsCount: 780,
-        negativeNewsCount: 320,
-        neutralNewsCount: 150,
-        sentimentScore: 0.62,
-        buzzScore: 75
-      },
-      ethereum: {
-        newsSentiment: 0.58,
-        newsVolume: 980,
-        positiveNewsCount: 590,
-        negativeNewsCount: 280,
-        neutralNewsCount: 110,
-        sentimentScore: 0.58,
-        buzzScore: 68
-      },
-      binancecoin: {
-        newsSentiment: 0.55,
-        newsVolume: 720,
-        positiveNewsCount: 420,
-        negativeNewsCount: 210,
-        neutralNewsCount: 90,
-        sentimentScore: 0.55,
-        buzzScore: 62
-      },
-      solana: {
-        newsSentiment: 0.64,
-        newsVolume: 850,
-        positiveNewsCount: 520,
-        negativeNewsCount: 180,
-        neutralNewsCount: 150,
-        sentimentScore: 0.64,
-        buzzScore: 71
+      if (cryptocurrency) {
+        // Get the most recent news sentiment from database
+        const latestSentiment = await db.newsSentiment.findFirst({
+          where: { cryptoId: cryptocurrency.id },
+          orderBy: { timestamp: 'desc' }
+        })
+
+        if (latestSentiment) {
+          const lastUpdateTime = new Date(latestSentiment.timestamp)
+          const now = new Date()
+          const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+          
+          console.log(`📊 Using latest news sentiment from database for ${cryptocurrency.symbol} (${hoursAgo}h ago)`)
+          return {
+            ...latestSentiment,
+            last_updated: latestSentiment.timestamp,
+            is_outdated: true,
+            hours_ago: hoursAgo
+          }
+        }
+      }
+
+      // If no specific data, get the most recent news sentiment from any cryptocurrency
+      const anyLatestSentiment = await db.newsSentiment.findFirst({
+        orderBy: { timestamp: 'desc' }
+      })
+
+      if (anyLatestSentiment) {
+        const lastUpdateTime = new Date(anyLatestSentiment.timestamp)
+        const now = new Date()
+        const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+        
+        console.log(`📊 Using latest available news sentiment for ${coinId} (${hoursAgo}h ago)`)
+        return {
+          ...anyLatestSentiment,
+          last_updated: anyLatestSentiment.timestamp,
+          is_outdated: true,
+          hours_ago: hoursAgo
+        }
+      }
+
+      // Return N/A instead of mock data
+      console.log(`⚠️ No news sentiment found for ${coinId}, returning N/A`)
+      return {
+        newsSentiment: null,
+        newsVolume: null,
+        positiveNewsCount: null,
+        negativeNewsCount: null,
+        neutralNewsCount: null,
+        sentimentScore: null,
+        buzzScore: null,
+        error: "N/A - No news sentiment available"
+      }
+    } catch (error) {
+      console.error(`❌ Error getting news sentiment for ${coinId}:`, error)
+      // Return N/A instead of mock data
+      return {
+        newsSentiment: null,
+        newsVolume: null,
+        positiveNewsCount: null,
+        negativeNewsCount: null,
+        neutralNewsCount: null,
+        sentimentScore: null,
+        buzzScore: null,
+        error: "N/A - Database error"
       }
     }
-
-    // Apply known coin adjustments if available, otherwise use generated mock data
-    const finalData = {
-      ...mockData,
-      ...knownCoinAdjustments[coinId]
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    return finalData
   }
 }
 
-// Mock Google Trends service
+// Google Trends service
 export class GoogleTrendsService {
   static async getGoogleTrends(coinId: string) {
-    // Generate realistic Google Trends data for any coin
-    const mockData = {
-      trendsScore: Math.floor(50 + Math.random() * 40), // Random between 50 and 90
-      searchVolume: Math.floor(200000 + Math.random() * 800000), // Random between 200k and 1M
-      trendingKeywords: [
-        `${coinId} price`,
-        `${coinId} news`,
-        `${coinId} prediction`
-      ],
-      regionalInterest: {
-        US: Math.floor(60 + Math.random() * 30),
-        CN: Math.floor(40 + Math.random() * 40),
-        EU: Math.floor(50 + Math.random() * 30),
-        JP: Math.floor(30 + Math.random() * 30),
-        KR: Math.floor(35 + Math.random() * 30)
-      },
-      relatedQueries: [
-        { query: `${coinId} price today`, score: Math.floor(80 + Math.random() * 20), rising: Math.random() > 0.5 },
-        { query: `${coinId} prediction`, score: Math.floor(60 + Math.random() * 30), rising: Math.random() > 0.5 },
-        { query: `${coinId} analysis`, score: Math.floor(40 + Math.random() * 40), rising: Math.random() > 0.5 }
-      ],
-      trendDirection: ['rising', 'stable', 'falling'][Math.floor(Math.random() * 3)] as 'rising' | 'stable' | 'falling'
-    }
+    try {
+      // Import database here to avoid circular dependency
+      const { db } = await import('@/lib/db')
+      
+      // Try to find the cryptocurrency by coinGeckoId
+      const cryptocurrency = await db.cryptocurrency.findFirst({
+        where: { coinGeckoId: coinId }
+      })
 
-    // Specific adjustments for known coins
-    const knownCoinAdjustments: Record<string, Partial<any>> = {
-      bitcoin: {
-        trendsScore: 78,
-        searchVolume: 850000,
-        trendingKeywords: ['bitcoin price', 'btc news', 'bitcoin mining'],
-        regionalInterest: {
-          US: 85,
-          CN: 72,
-          EU: 68,
-          JP: 45,
-          KR: 52
-        },
-        relatedQueries: [
-          { query: 'bitcoin price today', score: 95, rising: true },
-          { query: 'bitcoin prediction', score: 78, rising: true },
-          { query: 'bitcoin mining', score: 65, rising: false }
-        ],
-        trendDirection: 'rising'
-      },
-      ethereum: {
-        trendsScore: 65,
-        searchVolume: 620000,
-        trendingKeywords: ['ethereum price', 'eth news', 'ethereum 2.0'],
-        regionalInterest: {
-          US: 72,
-          CN: 58,
-          EU: 65,
-          JP: 38,
-          KR: 45
-        },
-        relatedQueries: [
-          { query: 'ethereum price today', score: 88, rising: true },
-          { query: 'ethereum merge', score: 72, rising: false },
-          { query: 'ethereum gas fees', score: 58, rising: true }
-        ],
-        trendDirection: 'stable'
-      },
-      binancecoin: {
-        trendsScore: 58,
-        searchVolume: 420000,
-        trendingKeywords: ['bnb price', 'binance news', 'bnb staking'],
-        regionalInterest: {
-          US: 65,
-          CN: 78,
-          EU: 52,
-          JP: 42,
-          KR: 68
-        },
-        relatedQueries: [
-          { query: 'bnb price today', score: 82, rising: true },
-          { query: 'binance staking', score: 68, rising: false },
-          { query: 'bnb news', score: 55, rising: true }
-        ],
-        trendDirection: 'stable'
-      },
-      solana: {
-        trendsScore: 71,
-        searchVolume: 580000,
-        trendingKeywords: ['solana price', 'sol news', 'solana nft'],
-        regionalInterest: {
-          US: 78,
-          CN: 45,
-          EU: 62,
-          JP: 38,
-          KR: 55
-        },
-        relatedQueries: [
-          { query: 'solana price today', score: 85, rising: true },
-          { query: 'solana nft', score: 72, rising: true },
-          { query: 'solana vs ethereum', score: 48, rising: false }
-        ],
-        trendDirection: 'rising'
+      if (cryptocurrency) {
+        // Get the most recent Google Trends data from database
+        const latestTrends = await db.googleTrend.findFirst({
+          where: { cryptoId: cryptocurrency.id },
+          orderBy: { timestamp: 'desc' }
+        })
+
+        if (latestTrends) {
+          const lastUpdateTime = new Date(latestTrends.timestamp)
+          const now = new Date()
+          const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+          
+          console.log(`📊 Using latest Google Trends from database for ${cryptocurrency.symbol} (${hoursAgo}h ago)`)
+          return {
+            ...latestTrends,
+            last_updated: latestTrends.timestamp,
+            is_outdated: true,
+            hours_ago: hoursAgo
+          }
+        }
+      }
+
+      // If no specific data, get the most recent Google Trends data from any cryptocurrency
+      const anyLatestTrends = await db.googleTrend.findFirst({
+        orderBy: { timestamp: 'desc' }
+      })
+
+      if (anyLatestTrends) {
+        const lastUpdateTime = new Date(anyLatestTrends.timestamp)
+        const now = new Date()
+        const hoursAgo = Math.floor((now.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60))
+        
+        console.log(`📊 Using latest available Google Trends for ${coinId} (${hoursAgo}h ago)`)
+        return {
+          ...anyLatestTrends,
+          last_updated: anyLatestTrends.timestamp,
+          is_outdated: true,
+          hours_ago: hoursAgo
+        }
+      }
+
+      // Return N/A instead of mock data
+      console.log(`⚠️ No Google Trends found for ${coinId}, returning N/A`)
+      return {
+        trendsScore: null,
+        searchVolume: null,
+        trendingKeywords: null,
+        regionalInterest: null,
+        relatedQueries: null,
+        trendDirection: null,
+        error: "N/A - No Google Trends available"
+      }
+    } catch (error) {
+      console.error(`❌ Error getting Google Trends for ${coinId}:`, error)
+      // Return N/A instead of mock data
+      return {
+        trendsScore: null,
+        searchVolume: null,
+        trendingKeywords: null,
+        regionalInterest: null,
+        relatedQueries: null,
+        trendDirection: null,
+        error: "N/A - Database error"
       }
     }
-
-    // Apply known coin adjustments if available, otherwise use generated mock data
-    const finalData = {
-      ...mockData,
-      ...knownCoinAdjustments[coinId]
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 700))
-    
-    return finalData
   }
 }
 

@@ -1,0 +1,735 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Plus, RefreshCw, TrendingUp, TrendingDown, Minus, Bot, BarChart3, AlertTriangle, Bell, Settings } from 'lucide-react';
+
+interface MarketMetrics {
+  currentPrice: number;
+  priceChange: number;
+  volume24h: number;
+  marketCap: number;
+  fearGreedIndex: number;
+  rsi: number;
+  macd: number;
+  ma50: number;
+  ma200: number;
+}
+
+interface OnChainMetrics {
+  mvrv: number;
+  nupl: number;
+  sopr: number;
+  activeAddresses: number;
+  exchangeFlow: number;
+}
+
+interface TechnicalDetails {
+  bollingerPosition: string;
+  volume: number;
+  exchangeFlow: number;
+}
+
+interface SocialSentiment {
+  twitter: number;
+  reddit: number;
+  news: number;
+  googleTrends: number;
+}
+
+interface TradingSignal {
+  signal: 'BUY' | 'SELL' | 'HOLD';
+  confidence: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  entryPoint: string;
+  stopLoss: string;
+  takeProfit: string;
+}
+
+interface Alert {
+  id: string;
+  type: 'WARNING' | 'INFO' | 'NEW';
+  title: string;
+  message: string;
+}
+
+interface NewsItem {
+  id: string;
+  title: string;
+}
+
+export default function Home() {
+  const [selectedCoin, setSelectedCoin] = useState('bitcoin');
+  const [availableCoins, setAvailableCoins] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<MarketMetrics | null>(null);
+  const [onChainMetrics, setOnChainMetrics] = useState<OnChainMetrics | null>(null);
+  const [technicalDetails, setTechnicalDetails] = useState<TechnicalDetails | null>(null);
+  const [socialSentiment, setSocialSentiment] = useState<SocialSentiment | null>(null);
+  const [tradingSignal, setTradingSignal] = useState<TradingSignal | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newCoinSymbol, setNewCoinSymbol] = useState('');
+  const [newCoinName, setNewCoinName] = useState('');
+  const [newCoinId, setNewCoinId] = useState('');
+
+  useEffect(() => {
+    fetchAvailableCoins();
+    fetchAllData();
+  }, [selectedCoin]);
+
+  const fetchAvailableCoins = async () => {
+    try {
+      const response = await fetch('/api/cryptocurrencies?activeOnly=true');
+      if (response.ok) {
+        const coins = await response.json();
+        setAvailableCoins(coins);
+      }
+    } catch (error) {
+      console.error('Error fetching available coins:', error);
+      setAvailableCoins([
+        { coinGeckoId: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
+        { coinGeckoId: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
+        { coinGeckoId: 'binancecoin', symbol: 'BNB', name: 'BNB' },
+        { coinGeckoId: 'solana', symbol: 'SOL', name: 'Solana' }
+      ]);
+    }
+  };
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch dashboard data
+      const dashboardResponse = await fetch(`/api/dashboard?coinId=${selectedCoin}`);
+      const dashboardData = await dashboardResponse.json();
+      
+      // Fetch trading signals
+      const signalResponse = await fetch(`/api/trading-signals-fast?action=signal&coinId=${selectedCoin}`);
+      const signalData = await signalResponse.json();
+      
+      // Fetch alerts
+      const alertsResponse = await fetch(`/api/alerts-fast?action=process-data&coinId=${selectedCoin}`);
+      const alertsData = await alertsResponse.json();
+      
+      // Process data
+      const processedMetrics: MarketMetrics = {
+        currentPrice: dashboardData.price?.usd || 116627,
+        priceChange: dashboardData.price?.usd_24h_change || 1.46,
+        volume24h: dashboardData.price?.usd_24h_vol || 43043699449,
+        marketCap: dashboardData.price?.usd_market_cap || 2321404684888,
+        fearGreedIndex: dashboardData.sentiment?.fearGreedIndex || 67,
+        rsi: dashboardData.technical?.rsi || 58.5,
+        macd: dashboardData.technical?.macd || 145.5,
+        ma50: dashboardData.technical?.ma50 || 112000,
+        ma200: dashboardData.technical?.ma200 || 108000
+      };
+      
+      const processedOnChain: OnChainMetrics = {
+        mvrv: dashboardData.onChain?.mvrv || 1.8,
+        nupl: dashboardData.onChain?.nupl || 0.65,
+        sopr: dashboardData.onChain?.sopr || 1.02,
+        activeAddresses: dashboardData.onChain?.activeAddresses || 950000,
+        exchangeFlow: (dashboardData.onChain?.exchangeInflow || 0) - (dashboardData.onChain?.exchangeOutflow || 0)
+      };
+      
+      const processedTechnical: TechnicalDetails = {
+        bollingerPosition: 'Middle',
+        volume: dashboardData.price?.usd_24h_vol || 43043699449,
+        exchangeFlow: (dashboardData.onChain?.exchangeInflow || 0) - (dashboardData.onChain?.exchangeOutflow || 0)
+      };
+      
+      const processedSocial: SocialSentiment = {
+        twitter: dashboardData.sentiment?.social?.twitterSentiment || 0.68,
+        reddit: dashboardData.sentiment?.social?.redditSentiment || 0.72,
+        news: dashboardData.sentiment?.news?.newsSentiment || 0.62,
+        googleTrends: dashboardData.sentiment?.googleTrends?.trendsScore || 78
+      };
+      
+      const processedSignal: TradingSignal = {
+        signal: signalData.signal?.signal || 'BUY',
+        confidence: signalData.signal?.confidence || 78,
+        riskLevel: signalData.signal?.riskLevel || 'MEDIUM',
+        entryPoint: '$112K - $115K',
+        stopLoss: '$108K',
+        takeProfit: '$125K'
+      };
+      
+      const processedAlerts: Alert[] = alertsData.alerts || [
+        {
+          id: '1',
+          type: 'WARNING',
+          title: 'RSI approaching overbought',
+          message: 'RSI approaching overbought territory (68.5)'
+        },
+        {
+          id: '2',
+          type: 'INFO',
+          title: 'Bitcoin dominance increases',
+          message: 'Bitcoin dominance increases to 52%'
+        },
+        {
+          id: '3',
+          type: 'NEW',
+          title: 'Whale movement detected',
+          message: 'Whale movement detected - 500 BTC transferred to exchange'
+        }
+      ];
+      
+      const processedNews: NewsItem[] = [
+        { id: '1', title: 'Bitcoin price surges past $116K' },
+        { id: '2', title: 'Ethereum ETF inflows increase' },
+        { id: '3', title: 'Binance announces new features' },
+        { id: '4', title: 'Solana ecosystem grows' }
+      ];
+      
+      setMetrics(processedMetrics);
+      setOnChainMetrics(processedOnChain);
+      setTechnicalDetails(processedTechnical);
+      setSocialSentiment(processedSocial);
+      setTradingSignal(processedSignal);
+      setAlerts(processedAlerts);
+      setNews(processedNews);
+      
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Set fallback data
+      setFallbackData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setFallbackData = () => {
+    setMetrics({
+      currentPrice: 116627,
+      priceChange: 1.46,
+      volume24h: 43043699449,
+      marketCap: 2321404684888,
+      fearGreedIndex: 67,
+      rsi: 58.5,
+      macd: 145.5,
+      ma50: 112000,
+      ma200: 108000
+    });
+    
+    setOnChainMetrics({
+      mvrv: 1.8,
+      nupl: 0.65,
+      sopr: 1.02,
+      activeAddresses: 950000,
+      exchangeFlow: 3000
+    });
+    
+    setTechnicalDetails({
+      bollingerPosition: 'Middle',
+      volume: 43043699449,
+      exchangeFlow: 3000
+    });
+    
+    setSocialSentiment({
+      twitter: 0.68,
+      reddit: 0.72,
+      news: 0.62,
+      googleTrends: 78
+    });
+    
+    setTradingSignal({
+      signal: 'BUY',
+      confidence: 78,
+      riskLevel: 'MEDIUM',
+      entryPoint: '$112K - $115K',
+      stopLoss: '$108K',
+      takeProfit: '$125K'
+    });
+    
+    setAlerts([
+      { id: '1', type: 'WARNING', title: 'RSI approaching overbought', message: 'RSI approaching overbought territory (68.5)' },
+      { id: '2', type: 'INFO', title: 'Bitcoin dominance increases', message: 'Bitcoin dominance increases to 52%' },
+      { id: '3', type: 'NEW', title: 'Whale movement detected', message: 'Whale movement detected - 500 BTC transferred to exchange' }
+    ]);
+    
+    setNews([
+      { id: '1', title: 'Bitcoin price surges past $116K' },
+      { id: '2', title: 'Ethereum ETF inflows increase' },
+      { id: '3', title: 'Binance announces new features' },
+      { id: '4', title: 'Solana ecosystem grows' }
+    ]);
+  };
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}T`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
+  };
+
+  const formatNumber = (value: number) => {
+    if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
+    return value.toString();
+  };
+
+  const getSignalColor = (signal: string) => {
+    switch (signal) {
+      case 'BUY': return 'text-green-600 bg-green-50';
+      case 'SELL': return 'text-red-600 bg-red-50';
+      case 'HOLD': return 'text-yellow-600 bg-yellow-50';
+      default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const getSignalIcon = (signal: string) => {
+    switch (signal) {
+      case 'BUY': return '🟢';
+      case 'SELL': return '🔴';
+      case 'HOLD': return '🟡';
+      default: return '⚪';
+    }
+  };
+
+  const getRSIColor = (rsi: number) => {
+    if (rsi > 70) return 'text-red-600 bg-red-50';
+    if (rsi < 30) return 'text-green-600 bg-green-50';
+    return 'text-yellow-600 bg-yellow-50';
+  };
+
+  const getMACDTrend = (macd: number) => {
+    return macd > 0 ? '📈 BULL' : '📉 BEAR';
+  };
+
+  const getMAStatus = (ma50: number, ma200: number) => {
+    return ma50 > ma200 ? 'Golden X 📈' : 'Death X 📉';
+  };
+
+  const getSentimentColor = (value: number) => {
+    if (value > 0.6) return 'text-green-600';
+    if (value < 0.4) return 'text-red-600';
+    return 'text-yellow-600';
+  };
+
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case 'WARNING': return '⚠️';
+      case 'INFO': return '📢';
+      case 'NEW': return '🔔';
+      default: return '📌';
+    }
+  };
+
+  const handleAddCoin = async () => {
+    if (!newCoinSymbol || !newCoinName || !newCoinId) return;
+    
+    try {
+      const response = await fetch('/api/cryptocurrencies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          symbol: newCoinSymbol.toUpperCase(),
+          name: newCoinName,
+          coinGeckoId: newCoinId.toLowerCase()
+        })
+      });
+      
+      if (response.ok) {
+        await fetchAvailableCoins();
+        setIsAddModalOpen(false);
+        setNewCoinSymbol('');
+        setNewCoinName('');
+        setNewCoinId('');
+      } else {
+        alert('Failed to add coin');
+      }
+    } catch (error) {
+      console.error('Error adding coin:', error);
+      alert('Failed to add coin');
+    }
+  };
+
+  const getSelectedCoinName = () => {
+    const coin = availableCoins.find(c => c.coinGeckoId === selectedCoin);
+    return coin ? `${coin.symbol} ${coin.name}` : 'Bitcoin';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg">
+          <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-800 text-center">Đang tải dữ liệu...</h2>
+          <p className="text-gray-600 text-center mt-2">Vui lòng chờ trong giây lát</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-bold text-gray-900">Crypto Analytics Dashboard Pro</h1>
+              <select
+                value={selectedCoin}
+                onChange={(e) => setSelectedCoin(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                {availableCoins.map((coin) => (
+                  <option key={coin.coinGeckoId} value={coin.coinGeckoId}>
+                    {coin.symbol} {coin.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={fetchAllData}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button
+                onClick={() => setIsAddModalOpen(true)}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Coin
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Market Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Market Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-4">
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">Price</div>
+                <div className="text-lg font-bold">
+                  {metrics ? formatCurrency(metrics.currentPrice) : 'N/A'}
+                </div>
+                <div className={`text-sm ${metrics?.priceChange && metrics.priceChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {metrics?.priceChange ? `${metrics.priceChange > 0 ? '▲' : '▼'} ${metrics.priceChange}%` : 'N/A'}
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">Market Cap</div>
+                <div className="text-lg font-bold">
+                  {metrics ? formatCurrency(metrics.marketCap) : 'N/A'}
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">Volume 24h</div>
+                <div className="text-lg font-bold">
+                  {metrics ? formatCurrency(metrics.volume24h) : 'N/A'}
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">Fear/Greed</div>
+                <div className="text-lg font-bold">
+                  {metrics?.fearGreedIndex || 'N/A'}
+                </div>
+                <div className="text-sm">😊</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">RSI</div>
+                <div className={`text-lg font-bold px-2 py-1 rounded ${metrics ? getRSIColor(metrics.rsi) : 'bg-gray-100'}`}>
+                  {metrics?.rsi?.toFixed(1) || 'N/A'}
+                </div>
+                <div className="text-xs text-gray-600">NORMAL</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">MACD</div>
+                <div className="text-lg font-bold">
+                  {metrics?.macd?.toFixed(1) || 'N/A'}
+                </div>
+                <div className="text-sm">{metrics ? getMACDTrend(metrics.macd) : 'N/A'}</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">MA50/200</div>
+                <div className="text-lg font-bold">
+                  {metrics ? getMAStatus(metrics.ma50, metrics.ma200) : 'N/A'}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Trading Signals and Technical Details */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Trading Signals */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Trading Signals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className={`text-center p-4 rounded-lg ${tradingSignal ? getSignalColor(tradingSignal.signal) : 'bg-gray-100'}`}>
+                  <div className="text-2xl font-bold mb-2">
+                    {tradingSignal ? `${getSignalIcon(tradingSignal.signal)} ${tradingSignal.signal}` : 'N/A'}
+                  </div>
+                  <div className="text-sm">Confidence: {tradingSignal?.confidence || 0}%</div>
+                  <div className="text-sm">Risk Level: {tradingSignal?.riskLevel || 'N/A'}</div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div><strong>Entry:</strong> {tradingSignal?.entryPoint || 'N/A'}</div>
+                  <div><strong>Stop Loss:</strong> {tradingSignal?.stopLoss || 'N/A'}</div>
+                  <div><strong>Take Profit:</strong> {tradingSignal?.takeProfit || 'N/A'}</div>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Bot className="h-4 w-4 mr-2" />
+                    AI Analysis
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Price Chart
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Technical Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Technical Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Bollinger</div>
+                    <div className="text-lg font-bold">➡️</div>
+                    <div className="text-xs">{technicalDetails?.bollingerPosition || 'Middle'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Volume</div>
+                    <div className="text-lg font-bold">📊</div>
+                    <div className="text-xs">{technicalDetails ? formatCurrency(technicalDetails.volume) : 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Exchange Flow</div>
+                    <div className="text-lg font-bold">{technicalDetails?.exchangeFlow && technicalDetails.exchangeFlow > 0 ? '💰' : '💸'}</div>
+                    <div className="text-xs">{technicalDetails ? `Net ${technicalDetails.exchangeFlow > 0 ? '+' : ''}${technicalDetails.exchangeFlow}` : 'N/A'}</div>
+                  </div>
+                </div>
+                
+                {/* On-chain Indicators */}
+                <div>
+                  <h4 className="font-medium mb-2">On-chain Indicators ({getSelectedCoinName()})</h4>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">MVRV</div>
+                      <div className="text-lg font-bold text-green-600">{onChainMetrics?.mvrv?.toFixed(2) || 'N/A'}</div>
+                      <div className="text-xs">🟢 FAIR</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">NUPL</div>
+                      <div className="text-lg font-bold text-yellow-600">{onChainMetrics?.nupl?.toFixed(2) || 'N/A'}</div>
+                      <div className="text-xs">🟡 HOPE</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">SOPR</div>
+                      <div className="text-lg font-bold text-green-600">{onChainMetrics?.sopr?.toFixed(2) || 'N/A'}</div>
+                      <div className="text-xs">🟢 PROFIT</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Active Addresses */}
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <div className="text-sm text-green-600 mb-1">Active Addresses ({getSelectedCoinName()})</div>
+                      <div className="text-2xl font-bold text-green-800">
+                        {onChainMetrics ? formatNumber(onChainMetrics.activeAddresses) : 'N/A'}
+                      </div>
+                      <div className="text-sm text-green-600">👥 Network Activity</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Social Sentiment and News */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Social Sentiment */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Social Sentiment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-4 gap-4 text-center">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Twitter</div>
+                  <div className={`text-lg font-bold ${socialSentiment ? getSentimentColor(socialSentiment.twitter) : 'text-gray-600'}`}>
+                    {socialSentiment?.twitter?.toFixed(2) || 'N/A'}
+                  </div>
+                  <div className="text-xs">🟢</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Reddit</div>
+                  <div className={`text-lg font-bold ${socialSentiment ? getSentimentColor(socialSentiment.reddit) : 'text-gray-600'}`}>
+                    {socialSentiment?.reddit?.toFixed(2) || 'N/A'}
+                  </div>
+                  <div className="text-xs">🟢</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">News</div>
+                  <div className={`text-lg font-bold ${socialSentiment ? getSentimentColor(socialSentiment.news) : 'text-gray-600'}`}>
+                    {socialSentiment?.news?.toFixed(2) || 'N/A'}
+                  </div>
+                  <div className="text-xs">🟢</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Google</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {socialSentiment?.googleTrends || 'N/A'}
+                  </div>
+                  <div className="text-xs">📈</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* News */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">News</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {news.map((item) => (
+                  <div key={item.id} className="text-sm">
+                    • {item.title}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Alerts & Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Alerts & Notifications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 mb-4">
+              {alerts.map((alert) => (
+                <div key={alert.id} className="flex items-center space-x-2 text-sm">
+                  <span>{getAlertIcon(alert.type)}</span>
+                  <span className="font-medium">{alert.title}:</span>
+                  <span>{alert.message}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Alert
+              </Button>
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Alert Settings
+              </Button>
+              <Button variant="outline" size="sm">
+                <Bell className="h-4 w-4 mr-2" />
+                Telegram Alerts
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* Add Coin Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Coin</DialogTitle>
+            <DialogDescription>
+              Add a new cryptocurrency to your watchlist
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="coinId">Coin ID</Label>
+              <Input
+                id="coinId"
+                placeholder="e.g., bitcoin, ethereum"
+                value={newCoinId}
+                onChange={(e) => setNewCoinId(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="symbol">Symbol</Label>
+              <Input
+                id="symbol"
+                placeholder="e.g., BTC, ETH"
+                value={newCoinSymbol}
+                onChange={(e) => setNewCoinSymbol(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Bitcoin, Ethereum"
+                value={newCoinName}
+                onChange={(e) => setNewCoinName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCoin}>
+              Add Coin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

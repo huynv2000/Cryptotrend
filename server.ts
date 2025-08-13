@@ -1,5 +1,6 @@
 // server.ts - Next.js Standalone + Socket.IO
 import { setupSocket } from '@/lib/socket';
+import { dataCollector } from '@/lib/index';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import next from 'next';
@@ -46,6 +47,17 @@ async function createCustomServer() {
     server.listen(currentPort, hostname, () => {
       console.log(`> Ready on http://${hostname}:${currentPort}`);
       console.log(`> Socket.IO server running at ws://${hostname}:${currentPort}/api/socketio`);
+      
+      // Start data collector after server is ready
+      console.log('🚀 Starting data collector...');
+      dataCollector.startScheduledCollection()
+        .then(() => {
+          console.log('✅ Data collector started successfully');
+        })
+        .catch((error) => {
+          console.error('❌ Failed to start data collector:', error);
+          console.log('⚠️ System will run with existing data only');
+        });
     });
 
   } catch (err) {

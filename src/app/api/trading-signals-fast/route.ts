@@ -1,144 +1,139 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { TradingSignalService } from '@/lib/trading-signals'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const coinId = searchParams.get('coinId') || 'bitcoin'
-    const action = searchParams.get('action')
-
-    const tradingSignalService = TradingSignalService.getInstance()
-
-    switch (action) {
-      case 'signal':
-        // Get cryptocurrency data
-        const cryptocurrency = await db.cryptocurrency.findFirst({
-          where: { coinGeckoId: coinId }
-        })
-
-        if (!cryptocurrency) {
-          return NextResponse.json(
-            { error: 'Cryptocurrency not found' },
-            { status: 404 }
-          )
-        }
-
-        // Get latest data from database
-        const latestPrice = await db.priceHistory.findFirst({
-          where: { cryptoId: cryptocurrency.id },
-          orderBy: { timestamp: 'desc' }
-        })
-
-        const latestOnChain = await db.onChainMetric.findFirst({
-          where: { cryptoId: cryptocurrency.id },
-          orderBy: { timestamp: 'desc' }
-        })
-
-        const latestTechnical = await db.technicalIndicator.findFirst({
-          where: { cryptoId: cryptocurrency.id },
-          orderBy: { timestamp: 'desc' }
-        })
-
-        const latestDerivative = await db.derivativeMetric.findFirst({
-          where: { cryptoId: cryptocurrency.id },
-          orderBy: { timestamp: 'desc' }
-        })
-
-        const latestSentiment = await db.sentimentMetric.findFirst({
-          orderBy: { timestamp: 'desc' }
-        })
-
-        // Construct market data from database
-        const marketData = {
-          mvrv: latestOnChain?.mvrv || 1.5,
-          fearGreedIndex: latestSentiment?.fearGreedIndex || 50,
-          fundingRate: latestDerivative?.fundingRate || 0,
-          sopr: latestOnChain?.sopr || 1,
-          rsi: latestTechnical?.rsi || 50,
-          nupl: latestOnChain?.nupl || 0.5,
-          transactionVolume: latestOnChain?.transactionVolume || 1000000000,
-          previousTransactionVolume: (latestOnChain?.transactionVolume || 1000000000) * 0.95,
-          openInterest: latestDerivative?.openInterest || 1000000000,
-          socialSentiment: latestSentiment?.socialSentiment || 0.5,
-          newsSentiment: latestSentiment?.newsSentiment || 0.5,
-          price: latestPrice?.price || 50000,
-          priceChange24h: latestPrice?.priceChange24h || 0,
-          volume24h: latestPrice?.volume24h || 1000000000,
-          marketCap: latestPrice?.marketCap || 1000000000000
-        }
-
-        const signal = tradingSignalService.generateSignal(marketData)
-        const analysis = tradingSignalService.getSignalAnalysis(signal)
-
-        return NextResponse.json({
-          signal,
-          analysis,
-          marketData,
-          timestamp: new Date().toISOString(),
-          dataSource: 'database'
-        })
-
-      case 'thresholds':
-        // Get current signal thresholds
-        const thresholds = tradingSignalService.getThresholds()
-        return NextResponse.json({ thresholds })
-
-      default:
-        return NextResponse.json(
-          { error: 'Invalid action parameter' },
-          { status: 400 }
-        )
-    }
-  } catch (error) {
-    console.error('Error in trading signals fast API:', error)
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+    const coinId = searchParams.get('coinId') || 'bitcoin';
     
-    // Return fallback data if database fails
-    const fallbackSignal = {
-      signal: 'HOLD',
-      confidence: 0.5,
-      reasoning: 'Fallback trading signal',
-      riskLevel: 'MEDIUM' as const,
-      conditions: {
-        mvrv: 1.5,
-        fearGreed: 50,
-        fundingRate: 0,
-        sopr: 1,
-        rsi: 50,
-        nupl: 0.5,
-        volumeTrend: 'stable' as const,
-        extremeDetected: false
-      },
-      triggers: ['Fallback data']
+    if (action === 'signal') {
+      // Get cryptocurrency
+      const crypto = await db.cryptocurrency.findFirst({
+        where: { coinGeckoId: coinId }
+      });
+      
+      if (!crypto) {
+        return NextResponse.json(
+          { error: 'Cryptocurrency not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Get latest data for signal calculation
+      const onChainData = await db.onChainMetric.findFirst({
+        where: { cryptoId: crypto.id },
+        orderBy: { timestamp: 'desc' }
+      });
+      
+      const technicalData = await db.technicalIndicator.findFirst({
+        where: { cryptoId: crypto.id },
+        orderBy: { timestamp: 'desc' }
+      });
+      
+      const sentimentData = await db.sentimentMetric.findFirst({
+        orderBy: { timestamp: 'desc' }
+      });
+      
+      const derivativesData = await db.derivativeMetric.findFirst({
+        where: { cryptoId: crypto.id },
+        orderBy: { timestamp: 'desc' }
+      });
+      
+      // Check if we have valid data for signal calculation
+      if (!onChainData || !technicalData || !sentimentData || !derivativesData ||
+          onChainData.mvrv === null || technicalData.rsi === null || 
+          sentimentData.fearGreedIndex === null || derivativesData.fundingRate === null) {
+        
+        return NextResponse.json({
+          signal: {
+            signal: 'N/A',
+            confidence: 0,
+            reasoning: 'Insufficient data available for signal calculation',
+            riskLevel: 'UNKNOWN',
+            conditions: {
+              mvrv: onChainData?.mvrv || null,
+              fearGreed: sentimentData?.fearGreedIndex || null,
+              fundingRate: derivativesData?.fundingRate || null,
+              sopr: onChainData?.sopr || null,
+              rsi: technicalData?.rsi || null,
+              nupl: onChainData?.nupl || null,
+              volumeTrend: 'unknown',
+              extremeDetected: false,
+              error: "N/A - Insufficient data for signal calculation"
+            },
+            triggers: ['Data quality check failed']
+          }
+        });
+      }
+      
+      // Calculate trading signal (simplified logic)
+      let signal = 'HOLD';
+      let confidence = 50;
+      let reasoning = 'Market conditions are neutral';
+      let riskLevel = 'MEDIUM';
+      
+      const mvrv = onChainData.mvrv;
+      const rsi = technicalData.rsi;
+      const fearGreed = sentimentData.fearGreedIndex;
+      const fundingRate = derivativesData.fundingRate;
+      
+      // Buy conditions
+      if (mvrv < 1.5 && rsi < 60 && fearGreed < 60 && fundingRate < 0.02) {
+        signal = 'BUY';
+        confidence = 75;
+        reasoning = 'MVRV indicates undervaluation, RSI shows no overbought conditions, fear/greed is neutral, funding rate is healthy';
+        riskLevel = 'LOW';
+      }
+      // Strong buy conditions
+      else if (mvrv < 1.2 && rsi < 40 && fearGreed < 40 && fundingRate < 0.01) {
+        signal = 'STRONG_BUY';
+        confidence = 85;
+        reasoning = 'Strong undervaluation signals across all metrics';
+        riskLevel = 'LOW';
+      }
+      // Sell conditions
+      else if (mvrv > 2.5 || rsi > 70 || fearGreed > 75 || fundingRate > 0.05) {
+        signal = 'SELL';
+        confidence = 70;
+        reasoning = 'Overvaluation or overbought conditions detected';
+        riskLevel = 'HIGH';
+      }
+      // Strong sell conditions
+      else if (mvrv > 3 || rsi > 80 || fearGreed > 80 || fundingRate > 0.1) {
+        signal = 'STRONG_SELL';
+        confidence = 90;
+        reasoning = 'Extreme overvaluation conditions';
+        riskLevel = 'HIGH';
+      }
+      
+      const tradingSignal = {
+        signal: signal,
+        confidence: confidence,
+        reasoning: reasoning,
+        riskLevel: riskLevel,
+        conditions: {
+          mvrv: mvrv,
+          fearGreed: fearGreed,
+          fundingRate: fundingRate,
+          sopr: onChainData.sopr,
+          rsi: rsi,
+          nupl: onChainData.nupl,
+          volumeTrend: 'stable',
+          extremeDetected: false
+        },
+        triggers: [reasoning]
+      };
+      
+      return NextResponse.json({ signal: tradingSignal });
     }
-
-    return NextResponse.json({
-      signal: fallbackSignal,
-      analysis: {
-        recommendation: 'HOLD - Chờ đợi tín hiệu rõ ràng hơn',
-        timeframe: 'Ngắn hạn',
-        riskFactors: ['Dữ liệu fallback'],
-        entryPoints: 'Chờ tín hiệu xác nhận',
-        exitPoints: 'Chốt lời khi có tín hiệu',
-        stopLoss: 'Quản lý rủi ro chặt chẽ',
-        takeProfit: 'Lợi nhuận vừa phải',
-        confidence: 0.5
-      },
-      marketData: {
-        mvrv: 1.5,
-        fearGreedIndex: 50,
-        fundingRate: 0,
-        sopr: 1,
-        rsi: 50,
-        nupl: 0.5,
-        transactionVolume: 1000000000,
-        previousTransactionVolume: 950000000,
-        openInterest: 1000000000,
-        socialSentiment: 0.5,
-        newsSentiment: 0.5
-      },
-      timestamp: new Date().toISOString(),
-      dataSource: 'fallback'
-    })
+    
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error) {
+    console.error('Error processing trading signals:', error);
+    return NextResponse.json(
+      { error: 'Failed to process trading signals' },
+      { status: 500 }
+    );
   }
 }

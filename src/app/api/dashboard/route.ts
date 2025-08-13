@@ -1,321 +1,200 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+
+// Helper function to check if data is outdated
+function isDataOutdated(timestamp: Date, now: Date): boolean {
+  const hoursDiff = (now.getTime() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
+  return hoursDiff > 1; // Consider data outdated if older than 1 hour
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const coinId = searchParams.get('coinId') || 'bitcoin'
-
-    // Get cryptocurrency data
-    const cryptocurrency = await db.cryptocurrency.findFirst({
+    const { searchParams } = new URL(request.url);
+    const coinId = searchParams.get('coinId') || 'bitcoin';
+    
+    // Get cryptocurrency basic info
+    const crypto = await db.cryptocurrency.findFirst({
       where: { coinGeckoId: coinId }
-    })
-
-    if (!cryptocurrency) {
+    });
+    
+    if (!crypto) {
       return NextResponse.json(
         { error: 'Cryptocurrency not found' },
         { status: 404 }
-      )
+      );
     }
-
-    // Get latest price data
-    const latestPrice = await db.priceHistory.findFirst({
-      where: { cryptoId: cryptocurrency.id },
-      orderBy: { timestamp: 'desc' }
-    })
-
-    // Get latest on-chain metrics
-    const latestOnChain = await db.onChainMetric.findFirst({
-      where: { cryptoId: cryptocurrency.id },
-      orderBy: { timestamp: 'desc' }
-    })
-
-    // Get latest technical indicators
-    const latestTechnical = await db.technicalIndicator.findFirst({
-      where: { cryptoId: cryptocurrency.id },
-      orderBy: { timestamp: 'desc' }
-    })
-
-    // Get latest derivative metrics
-    const latestDerivative = await db.derivativeMetric.findFirst({
-      where: { cryptoId: cryptocurrency.id },
-      orderBy: { timestamp: 'desc' }
-    })
-
-    // Get latest sentiment metrics
-    const latestSentiment = await db.sentimentMetric.findFirst({
-      orderBy: { timestamp: 'desc' }
-    })
-
-    // Get latest AI analysis
-    const latestAnalysis = await db.analysisHistory.findFirst({
-      where: { cryptoId: cryptocurrency.id },
-      orderBy: { timestamp: 'desc' }
-    })
-
-    // Construct dashboard data from database
-    const dashboardData = {
-      price: latestPrice ? {
-        usd: latestPrice.price,
-        usd_24h_change: latestPrice.priceChange24h || 0,
-        usd_24h_vol: latestPrice.volume24h || 0,
-        usd_market_cap: latestPrice.marketCap || 0
-      } : {
-        usd: 0,
-        usd_24h_change: 0,
-        usd_24h_vol: 0,
-        usd_market_cap: 0
-      },
-      onChain: latestOnChain ? {
-        mvrv: latestOnChain.mvrv,
-        nupl: latestOnChain.nupl,
-        sopr: latestOnChain.sopr,
-        activeAddresses: latestOnChain.activeAddresses,
-        exchangeInflow: latestOnChain.exchangeInflow,
-        exchangeOutflow: latestOnChain.exchangeOutflow,
-        transactionVolume: latestOnChain.transactionVolume,
-        supplyDistribution: latestOnChain.supplyDistribution,
-        whaleHoldingsPercentage: latestOnChain.whaleHoldingsPercentage,
-        retailHoldingsPercentage: latestOnChain.retailHoldingsPercentage,
-        exchangeHoldingsPercentage: latestOnChain.exchangeHoldingsPercentage
-      } : {
-        mvrv: 0,
-        nupl: 0,
-        sopr: 0,
-        activeAddresses: 0,
-        exchangeInflow: 0,
-        exchangeOutflow: 0,
-        transactionVolume: 0,
-        supplyDistribution: null,
-        whaleHoldingsPercentage: 0,
-        retailHoldingsPercentage: 0,
-        exchangeHoldingsPercentage: 0
-      },
-      technical: latestTechnical ? {
-        rsi: latestTechnical.rsi,
-        ma50: latestTechnical.ma50,
-        ma200: latestTechnical.ma200,
-        macd: latestTechnical.macd,
-        macdSignal: latestTechnical.macdSignal,
-        bollingerUpper: latestTechnical.bollingerUpper,
-        bollingerLower: latestTechnical.bollingerLower,
-        bollingerMiddle: latestTechnical.bollingerMiddle
-      } : {
-        rsi: 0,
-        ma50: 0,
-        ma200: 0,
-        macd: 0,
-        macdSignal: 0,
-        bollingerUpper: 0,
-        bollingerLower: 0,
-        bollingerMiddle: 0
-      },
-      derivatives: latestDerivative ? {
-        openInterest: latestDerivative.openInterest,
-        fundingRate: latestDerivative.fundingRate,
-        liquidationVolume: latestDerivative.liquidationVolume,
-        putCallRatio: latestDerivative.putCallRatio
-      } : {
-        openInterest: 0,
-        fundingRate: 0,
-        liquidationVolume: 0,
-        putCallRatio: 0
-      },
-      sentiment: latestSentiment ? {
-        fearGreedIndex: latestSentiment.fearGreedIndex,
-        fearGreedClassification: latestSentiment.fearGreedIndex ? 
-          (latestSentiment.fearGreedIndex <= 25 ? 'Extreme Fear' :
-           latestSentiment.fearGreedIndex <= 45 ? 'Fear' :
-           latestSentiment.fearGreedIndex <= 55 ? 'Neutral' :
-           latestSentiment.fearGreedIndex <= 75 ? 'Greed' : 'Extreme Greed') : 'Neutral',
-        social: {
-          twitterSentiment: latestSentiment.socialSentiment || 0.5,
-          redditSentiment: latestSentiment.socialSentiment || 0.5,
-          socialVolume: 45000,
-          engagementRate: 0.085,
-          influencerSentiment: 0.75,
-          trendingScore: 75
-        },
-        news: {
-          newsSentiment: latestSentiment.newsSentiment || 0.5,
-          newsVolume: 1250,
-          positiveNewsCount: 780,
-          negativeNewsCount: 320,
-          neutralNewsCount: 150,
-          sentimentScore: latestSentiment.newsSentiment || 0.5,
-          buzzScore: 75
-        },
-        googleTrends: {
-          trendsScore: latestSentiment.googleTrends || 75,
-          searchVolume: 850000,
-          trendingKeywords: ['bitcoin price', 'btc news', 'bitcoin mining'],
-          regionalInterest: {
-            US: 85,
-            CN: 72,
-            EU: 68,
-            JP: 45,
-            KR: 52
-          },
-          relatedQueries: [
-            { query: 'bitcoin price today', score: 95, rising: true },
-            { query: 'bitcoin prediction', score: 78, rising: true },
-            { query: 'bitcoin mining', score: 65, rising: false }
-          ],
-          trendDirection: 'stable'
-        }
-      } : {
-        fearGreedIndex: 50,
-        fearGreedClassification: 'Neutral',
-        social: {
-          twitterSentiment: 0.5,
-          redditSentiment: 0.5,
-          socialVolume: 45000,
-          engagementRate: 0.085,
-          influencerSentiment: 0.75,
-          trendingScore: 75
-        },
-        news: {
-          newsSentiment: 0.5,
-          newsVolume: 1250,
-          positiveNewsCount: 780,
-          negativeNewsCount: 320,
-          neutralNewsCount: 150,
-          sentimentScore: 0.5,
-          buzzScore: 75
-        },
-        googleTrends: {
-          trendsScore: 75,
-          searchVolume: 850000,
-          trendingKeywords: ['bitcoin price', 'btc news', 'bitcoin mining'],
-          regionalInterest: {
-            US: 85,
-            CN: 72,
-            EU: 68,
-            JP: 45,
-            KR: 52
-          },
-          relatedQueries: [
-            { query: 'bitcoin price today', score: 95, rising: true },
-            { query: 'bitcoin prediction', score: 78, rising: true },
-            { query: 'bitcoin mining', score: 65, rising: false }
-          ],
-          trendDirection: 'stable'
-        }
-      },
-      analysis: latestAnalysis ? {
-        signal: latestAnalysis.signal,
-        confidence: latestAnalysis.confidence,
-        reasoning: latestAnalysis.reasoning,
-        riskLevel: latestAnalysis.riskLevel,
-        aiModel: latestAnalysis.aiModel
-      } : {
-        signal: 'HOLD',
-        confidence: 0.5,
-        reasoning: 'No analysis available',
-        riskLevel: 'MEDIUM',
-        aiModel: 'fallback'
-      },
-      timestamp: new Date().toISOString(),
-      dataSource: 'database' // Indicate data comes from database
-    }
-
-    return NextResponse.json(dashboardData)
-
-  } catch (error) {
-    console.error('Error in dashboard API:', error)
     
-    // Return fallback data if database fails
-    const fallbackData = {
-      price: {
-        usd: 116627,
-        usd_24h_change: 1.46,
-        usd_24h_vol: 43043699449,
-        usd_market_cap: 2321404684888
+    // Get price data
+    const priceData = await db.priceHistory.findFirst({
+      where: { cryptoId: crypto.id },
+      orderBy: { timestamp: 'desc' }
+    });
+    
+    // Get on-chain metrics
+    const onChainData = await db.onChainMetric.findFirst({
+      where: { cryptoId: crypto.id },
+      orderBy: { timestamp: 'desc' }
+    });
+    
+    // Get technical indicators
+    const technicalData = await db.technicalIndicator.findFirst({
+      where: { cryptoId: crypto.id },
+      orderBy: { timestamp: 'desc' }
+    });
+    
+    // Get sentiment data
+    const sentimentData = await db.sentimentMetric.findFirst({
+      orderBy: { timestamp: 'desc' }
+    });
+    
+    // Get derivatives data
+    const derivativesData = await db.derivativeMetric.findFirst({
+      where: { cryptoId: crypto.id },
+      orderBy: { timestamp: 'desc' }
+    });
+    
+    // Format the response with outdated information
+    const now = new Date();
+    const dashboardData = {
+      cryptocurrency: crypto,
+      price: priceData ? {
+        usd: priceData.price,
+        usd_24h_change: priceData.priceChange24h,
+        usd_24h_vol: priceData.volume24h,
+        usd_market_cap: priceData.marketCap,
+        last_updated: priceData.timestamp,
+        is_outdated: isDataOutdated(priceData.timestamp, now)
+      } : {
+        usd: null,
+        usd_24h_change: null,
+        usd_24h_vol: null,
+        usd_market_cap: null,
+        error: "N/A - No price data available"
       },
-      onChain: {
-        mvrv: 1.8,
-        nupl: 0.65,
-        sopr: 1.02,
-        activeAddresses: 950000,
-        exchangeInflow: 15000,
-        exchangeOutflow: 12000,
-        transactionVolume: 25000000000,
-        supplyDistribution: {
-          whaleHoldings: { percentage: 42.3, addressCount: 850 },
-          retailHoldings: { percentage: 38.7, addressCount: 42000000 },
-          exchangeHoldings: { percentage: 12.5, addressCount: 150 },
-          otherHoldings: { percentage: 6.5, addressCount: 120000 }
-        },
-        whaleHoldingsPercentage: 42.3,
-        retailHoldingsPercentage: 38.7,
-        exchangeHoldingsPercentage: 12.5
+      onChain: onChainData ? {
+        mvrv: onChainData.mvrv,
+        nupl: onChainData.nupl,
+        sopr: onChainData.sopr,
+        activeAddresses: onChainData.activeAddresses,
+        exchangeInflow: onChainData.exchangeInflow,
+        exchangeOutflow: onChainData.exchangeOutflow,
+        transactionVolume: onChainData.transactionVolume,
+        whaleHoldingsPercentage: onChainData.whaleHoldingsPercentage,
+        retailHoldingsPercentage: onChainData.retailHoldingsPercentage,
+        exchangeHoldingsPercentage: onChainData.exchangeHoldingsPercentage,
+        last_updated: onChainData.timestamp,
+        is_outdated: isDataOutdated(onChainData.timestamp, now)
+      } : {
+        mvrv: null,
+        nupl: null,
+        sopr: null,
+        activeAddresses: null,
+        exchangeInflow: null,
+        exchangeOutflow: null,
+        transactionVolume: null,
+        whaleHoldingsPercentage: null,
+        retailHoldingsPercentage: null,
+        exchangeHoldingsPercentage: null,
+        error: "N/A - No on-chain data available"
       },
-      technical: {
-        rsi: 58.5,
-        ma50: 112000,
-        ma200: 108000,
-        macd: 145.5,
-        macdSignal: 140,
-        bollingerUpper: 122000,
-        bollingerLower: 111000,
-        bollingerMiddle: 116627
+      technical: technicalData ? {
+        rsi: technicalData.rsi,
+        ma50: technicalData.ma50,
+        ma200: technicalData.ma200,
+        macd: technicalData.macd,
+        bollingerUpper: technicalData.bollingerUpper,
+        bollingerLower: technicalData.bollingerLower,
+        bollingerMiddle: technicalData.bollingerMiddle,
+        last_updated: technicalData.timestamp,
+        is_outdated: isDataOutdated(technicalData.timestamp, now)
+      } : {
+        rsi: null,
+        ma50: null,
+        ma200: null,
+        macd: null,
+        bollingerUpper: null,
+        bollingerLower: null,
+        bollingerMiddle: null,
+        error: "N/A - No technical indicators available"
       },
-      derivatives: {
-        openInterest: 18500000000,
-        fundingRate: 0.0125,
-        liquidationVolume: 45000000,
-        putCallRatio: 0.85
-      },
-      sentiment: {
-        fearGreedIndex: 67,
-        fearGreedClassification: 'Greed',
+      sentiment: sentimentData ? {
+        fearGreedIndex: sentimentData.fearGreedIndex,
+        fearGreedClassification: sentimentData.fearGreedClassification,
         social: {
-          twitterSentiment: 0.68,
-          redditSentiment: 0.72,
-          socialVolume: 45000,
-          engagementRate: 0.085,
-          influencerSentiment: 0.75,
-          trendingScore: 85
+          twitterSentiment: sentimentData.socialSentiment,
+          redditSentiment: sentimentData.redditSentiment,
+          socialVolume: sentimentData.socialVolume,
+          engagementRate: sentimentData.engagementRate,
+          influencerSentiment: sentimentData.influencerSentiment,
+          trendingScore: sentimentData.trendingScore
         },
         news: {
-          newsSentiment: 0.62,
-          newsVolume: 1250,
-          positiveNewsCount: 780,
-          negativeNewsCount: 320,
-          neutralNewsCount: 150,
-          sentimentScore: 0.62,
-          buzzScore: 75
+          newsSentiment: sentimentData.newsSentiment,
+          newsVolume: sentimentData.newsVolume,
+          positiveNewsCount: sentimentData.positiveNewsCount,
+          negativeNewsCount: sentimentData.negativeNewsCount,
+          neutralNewsCount: sentimentData.neutralNewsCount,
+          sentimentScore: sentimentData.sentimentScore,
+          buzzScore: sentimentData.buzzScore
         },
         googleTrends: {
-          trendsScore: 78,
-          searchVolume: 850000,
-          trendingKeywords: ['bitcoin price', 'btc news', 'bitcoin mining'],
-          regionalInterest: {
-            US: 85,
-            CN: 72,
-            EU: 68,
-            JP: 45,
-            KR: 52
-          },
-          relatedQueries: [
-            { query: 'bitcoin price today', score: 95, rising: true },
-            { query: 'bitcoin prediction', score: 78, rising: true },
-            { query: 'bitcoin mining', score: 65, rising: false }
-          ],
-          trendDirection: 'rising'
-        }
+          trendsScore: sentimentData.trendsScore,
+          searchVolume: sentimentData.searchVolume,
+          trendingKeywords: sentimentData.trendingKeywords ? sentimentData.trendingKeywords.split(',') : [],
+          trendDirection: sentimentData.trendDirection
+        },
+        last_updated: sentimentData.timestamp,
+        is_outdated: isDataOutdated(sentimentData.timestamp, now)
+      } : {
+        fearGreedIndex: null,
+        fearGreedClassification: null,
+        social: {
+          twitterSentiment: null,
+          redditSentiment: null,
+          socialVolume: null,
+          engagementRate: null,
+          influencerSentiment: null,
+          trendingScore: null
+        },
+        news: {
+          newsSentiment: null,
+          newsVolume: null,
+          positiveNewsCount: null,
+          negativeNewsCount: null,
+          neutralNewsCount: null,
+          sentimentScore: null,
+          buzzScore: null
+        },
+        googleTrends: {
+          trendsScore: null,
+          searchVolume: null,
+          trendingKeywords: [],
+          trendDirection: null
+        },
+        error: "N/A - No sentiment data available"
       },
-      analysis: {
-        signal: 'BUY',
-        confidence: 0.78,
-        reasoning: 'Fallback analysis data',
-        riskLevel: 'MEDIUM',
-        aiModel: 'fallback'
-      },
-      timestamp: new Date().toISOString(),
-      dataSource: 'fallback'
-    }
-
-    return NextResponse.json(fallbackData)
+      derivatives: derivativesData ? {
+        openInterest: derivativesData.openInterest,
+        fundingRate: derivativesData.fundingRate,
+        liquidationVolume: derivativesData.liquidationVolume,
+        putCallRatio: derivativesData.putCallRatio,
+        last_updated: derivativesData.timestamp,
+        is_outdated: isDataOutdated(derivativesData.timestamp, now)
+      } : {
+        openInterest: null,
+        fundingRate: null,
+        liquidationVolume: null,
+        putCallRatio: null,
+        error: "N/A - No derivatives data available"
+      }
+    };
+    
+    return NextResponse.json(dashboardData);
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch dashboard data' },
+      { status: 500 }
+    );
   }
 }
