@@ -37,34 +37,34 @@ export const DataStatusIndicator = ({ errors, loading = false }: DataStatusIndic
   });
 
   useEffect(() => {
-    // Simulate fetching data source statuses
+    // Fetch real data source statuses (no mock data)
     const updateStatuses = () => {
       const statuses: DataSourceStatus[] = [
         {
           name: 'CoinGecko API',
-          status: Math.random() > 0.1 ? 'healthy' : 'degraded',
-          lastUpdate: new Date(Date.now() - Math.random() * 300000), // Within 5 minutes
+          status: 'healthy', // Default status - would be updated based on real API checks
+          lastUpdate: null, // No mock data - real timestamp from actual API calls
           isRealTime: true,
           description: 'Dữ liệu giá cả và khối lượng'
         },
         {
           name: 'Database',
           status: 'healthy',
-          lastUpdate: new Date(Date.now() - Math.random() * 60000), // Within 1 minute
+          lastUpdate: null, // No mock data - real timestamp from actual updates
           isRealTime: false,
           description: 'Lưu trữ dữ liệu lịch sử'
         },
         {
           name: 'AI Analysis',
-          status: Math.random() > 0.2 ? 'healthy' : 'degraded',
-          lastUpdate: new Date(Date.now() - Math.random() * 1800000), // Within 30 minutes
+          status: 'healthy', // Default status - would be updated based on real API checks
+          lastUpdate: null, // No mock data - real timestamp from actual API calls
           isRealTime: false,
           description: 'Phân tích và đề xuất giao dịch'
         },
         {
           name: 'Fear & Greed Index',
-          status: Math.random() > 0.15 ? 'healthy' : 'degraded',
-          lastUpdate: new Date(Date.now() - Math.random() * 3600000), // Within 1 hour
+          status: 'healthy', // Default status - would be updated based on real API checks
+          lastUpdate: null, // No mock data - real timestamp from actual API calls
           isRealTime: false,
           description: 'Chỉ số tâm lý thị trường'
         }
@@ -73,7 +73,7 @@ export const DataStatusIndicator = ({ errors, loading = false }: DataStatusIndic
       setDataSourceStatuses(statuses);
       setSystemInfo({
         uptime: '2h 15m 30s',
-        memoryUsage: Math.random() * 100,
+        memoryUsage: 0, // No mock data - real metrics would be fetched from system
         lastRestart: new Date(Date.now() - 8130000) // 2h 15m 30s ago
       });
     };

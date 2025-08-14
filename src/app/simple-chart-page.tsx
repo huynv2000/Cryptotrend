@@ -24,31 +24,19 @@ export default function SimpleChartPage() {
   const [chartData, setChartData] = useState<ChartDataItem[]>([])
 
   useEffect(() => {
-    // Generate sample data
-    const sampleData: ChartDataItem[] = []
-    const now = new Date()
-    const baseVolume = 25000000000 // $25B base volume
-    const basePrice = 102500
-    
-    for (let i = 89; i >= 0; i--) {
-      const timestamp = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
-      const trend = (89 - i) / 89
-      const randomFactor = 0.8 + Math.random() * 0.4
-      const volume = baseVolume * randomFactor * (1 + trend * 0.5)
-      const price = basePrice * (0.95 + Math.random() * 0.1)
-      
-      sampleData.push({
-        date: timestamp.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric'
-        }),
-        volume: volume,
-        avg30d: i >= 29 ? volume * (0.9 + Math.random() * 0.2) : 0,
-        price: price
-      })
+    // Fetch real chart data instead of generating mock data
+    const fetchChartData = async () => {
+      try {
+        // For now, set empty data to avoid showing mock data
+        // In production, this would fetch real volume and price data from the database
+        setChartData([])
+      } catch (error) {
+        console.error('Error fetching chart data:', error)
+        setChartData([])
+      }
     }
-    
-    setChartData(sampleData)
+
+    fetchChartData()
   }, [])
 
   const formatVolume = (volume: number) => {

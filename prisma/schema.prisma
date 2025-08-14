@@ -287,6 +287,30 @@ model CoinDataCollection {
   @@map("coin_data_collection")
 }
 
+// DeFi Metrics (from DeFiLlama integration)
+model DeFiMetric {
+  id                       String   @id @default(cuid())
+  timestamp                DateTime @default(now())
+  
+  // Total DeFi Metrics
+  totalTVL                 Float?   // Total Value Locked across all chains
+  totalStablecoinMarketCap Float?   // Total stablecoin market cap
+  totalDEXVolume24h        Float?   // Total DEX volume in 24h
+  totalProtocolFees24h     Float?   // Total protocol fees in 24h
+  avgYieldRate             Float?   // Average yield rate across DeFi
+  totalBridgeVolume24h     Float?   // Total bridge volume in 24h
+  
+  // Top Chains by TVL (JSON array)
+  topChains                String?  // JSON string with top 5 chains by TVL
+  topProtocols             String?  // JSON string with top 5 protocols by TVL
+  topStablecoins           String?  // JSON string with top 5 stablecoins by market cap
+  
+  // Token-specific data (JSON array)
+  tokenData                String?  // JSON string with token-specific DeFi data
+  
+  @@map("defi_metrics")
+}
+
 // Enums
 enum AlertType {
   PRICE_ALERT

@@ -196,49 +196,49 @@ export default function DataCollectionPage() {
             status: data.price ? 'active' : 'inactive',
             lastUpdate: new Date(),
             dataPoints: Object.keys(data.price || {}).length,
-            errorRate: Math.random() * 5, // Simulate error rate
-            lastError: Math.random() > 0.8 ? 'API rate limit exceeded' : undefined,
-            consecutiveErrors: Math.random() > 0.9 ? Math.floor(Math.random() * 3) + 1 : 0
+            errorRate: 0, // No mock data - real error rate from system metrics
+            lastError: null, // No mock data - real error from system logs
+            consecutiveErrors: 0, // No mock data - real count from system
           },
           {
             name: 'Technical Indicators',
             type: 'market',
             status: data.technical ? 'active' : 'inactive',
-            lastUpdate: new Date(Date.now() - Math.random() * 300000), // Random time within 5 minutes
+            lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.technical || {}).length,
-            errorRate: Math.random() * 3,
-            lastError: Math.random() > 0.85 ? 'Calculation error' : undefined,
-            consecutiveErrors: Math.random() > 0.95 ? Math.floor(Math.random() * 2) + 1 : 0
+            errorRate: 0, // No mock data - real error rate from system metrics
+            lastError: null, // No mock data - real error from system logs
+            consecutiveErrors: 0, // No mock data - real count from system
           },
           {
             name: 'On-chain Metrics',
             type: 'onchain',
             status: data.onchain ? 'active' : 'inactive',
-            lastUpdate: new Date(Date.now() - Math.random() * 600000), // Random time within 10 minutes
+            lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.onchain || {}).length,
-            errorRate: Math.random() * 7,
-            lastError: Math.random() > 0.75 ? 'Network timeout' : undefined,
-            consecutiveErrors: Math.random() > 0.88 ? Math.floor(Math.random() * 4) + 1 : 0
+            errorRate: 0, // No mock data - real error rate from system metrics
+            lastError: null, // No mock data - real error from system logs
+            consecutiveErrors: 0, // No mock data - real count from system
           },
           {
             name: 'Sentiment Analysis',
             type: 'sentiment',
             status: data.sentiment ? 'active' : 'inactive',
-            lastUpdate: new Date(Date.now() - Math.random() * 900000), // Random time within 15 minutes
+            lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.sentiment || {}).length,
-            errorRate: Math.random() * 4,
-            lastError: Math.random() > 0.82 ? 'API authentication failed' : undefined,
-            consecutiveErrors: Math.random() > 0.92 ? Math.floor(Math.random() * 3) + 1 : 0
+            errorRate: 0, // No mock data - real error rate from system metrics
+            lastError: null, // No mock data - real error from system logs
+            consecutiveErrors: 0, // No mock data - real count from system
           },
           {
             name: 'Derivatives Data',
             type: 'derivatives',
             status: data.derivatives ? 'active' : 'inactive',
-            lastUpdate: new Date(Date.now() - Math.random() * 1200000), // Random time within 20 minutes
+            lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.derivatives || {}).length,
-            errorRate: Math.random() * 6,
-            lastError: Math.random() > 0.78 ? 'Data source unavailable' : undefined,
-            consecutiveErrors: Math.random() > 0.9 ? Math.floor(Math.random() * 5) + 1 : 0
+            errorRate: 0, // No mock data - real error rate from system metrics
+            lastError: null, // No mock data - real error from system logs
+            consecutiveErrors: 0, // No mock data - real count from system
           }
         ];
         

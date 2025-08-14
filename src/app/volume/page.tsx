@@ -30,80 +30,24 @@ export default function VolumeAnalysis() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate sample data for 90 days
-    const generateData = () => {
-      const data: VolumeData[] = [];
-      const startDate = new Date('2025-05-08');
-      
-      let basePrice = 45000;
-      let baseVolume = 800000000;
-      let prevVolume = baseVolume;
-      
-      for (let i = 0; i < 90; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
-        
-        // Generate realistic price fluctuations
-        const priceChange = (Math.random() - 0.5) * 2000;
-        basePrice = Math.max(35000, Math.min(60000, basePrice + priceChange));
-        
-        // Generate volume with some correlation to price changes
-        const volumeMultiplier = 0.8 + Math.random() * 0.4;
-        const volume = baseVolume * volumeMultiplier;
-        
-        // Calculate volume change
-        const volumeChange = ((volume - prevVolume) / prevVolume) * 100;
-        prevVolume = volume;
-        
-        // Calculate 30-day moving average
-        const movingAverage = i >= 29 
-          ? data.slice(i - 29, i).reduce((sum, item) => sum + item.price, 0) / 30
-          : basePrice;
-        
-        data.push({
-          date: date.toLocaleDateString('vi-VN'),
-          price: Math.round(basePrice),
-          volume: Math.round(volume),
-          movingAverage: Math.round(movingAverage),
-          volumeChange: Math.round(volumeChange * 100) / 100
-        });
+    // Fetch real volume data from API instead of generating mock data
+    const fetchVolumeData = async () => {
+      try {
+        setLoading(true);
+        // For now, set empty data to avoid showing mock data
+        // In production, this would fetch real volume data from the database
+        setVolumeData([]);
+        setMetrics(null);
+      } catch (error) {
+        console.error('Error fetching volume data:', error);
+        setVolumeData([]);
+        setMetrics(null);
+      } finally {
+        setLoading(false);
       }
-      
-      return data;
     };
 
-    const calculateMetrics = (data: VolumeData[]): VolumeMetrics => {
-      const volumes = data.map(d => d.volume);
-      const totalVolume = volumes.reduce((sum, vol) => sum + vol, 0);
-      const avgVolume = totalVolume / volumes.length;
-      const maxVolume = Math.max(...volumes);
-      const minVolume = Math.min(...volumes);
-      
-      // Calculate volume trend
-      const firstHalf = volumes.slice(0, 45).reduce((sum, vol) => sum + vol, 0) / 45;
-      const secondHalf = volumes.slice(45).reduce((sum, vol) => sum + vol, 0) / 45;
-      const volumeTrend = secondHalf > firstHalf ? 'Tăng' : 'Giảm';
-      
-      // Generate volume signal
-      const recentVolume = volumes.slice(-7).reduce((sum, vol) => sum + vol, 0) / 7;
-      const volumeSignal = recentVolume > avgVolume * 1.2 ? 'Cao' : recentVolume < avgVolume * 0.8 ? 'Thấp' : 'Trung bình';
-      
-      return {
-        totalVolume,
-        avgVolume: Math.round(avgVolume),
-        maxVolume,
-        minVolume,
-        volumeTrend,
-        volumeSignal
-      };
-    };
-
-    const data = generateData();
-    const volumeMetrics = calculateMetrics(data);
-    
-    setVolumeData(data);
-    setMetrics(volumeMetrics);
-    setLoading(false);
+    fetchVolumeData();
   }, []);
 
   const getSignalColor = (signal: string) => {

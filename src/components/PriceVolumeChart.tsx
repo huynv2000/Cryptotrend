@@ -25,49 +25,23 @@ export default function PriceVolumeChart({ cryptoId, cryptoName, currentPrice }:
   const [timeRange, setTimeRange] = useState('30d')
 
   useEffect(() => {
-    generateChartData()
-  }, [timeRange, currentPrice])
-
-  const generateChartData = () => {
-    const data: ChartData[] = []
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
-
-    let basePrice = currentPrice
-    let prevPrice = basePrice
-
-    for (let i = 0; i < days; i++) {
-      const date = new Date(startDate)
-      date.setDate(startDate.getDate() + i)
-
-      // Generate realistic price fluctuations
-      const priceChange = (Math.random() - 0.5) * (basePrice * 0.05) // 5% max change
-      basePrice = Math.max(basePrice * 0.8, Math.min(basePrice * 1.2, basePrice + priceChange))
-
-      // Generate volume (inverse correlation with price stability)
-      const priceVolatility = Math.abs(basePrice - prevPrice) / prevPrice
-      const baseVolume = 1000000000 + Math.random() * 2000000000
-      const volume = baseVolume * (1 + priceVolatility * 10) // Higher volume with higher volatility
-
-      // Calculate moving average
-      const movingAverage = i >= 4 
-        ? data.slice(Math.max(0, i - 4), i).reduce((sum, item) => sum + item.price, 0) / Math.min(5, i)
-        : basePrice
-
-      prevPrice = basePrice
-
-      data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        price: Math.round(basePrice),
-        volume: Math.round(volume),
-        movingAverage: Math.round(movingAverage)
-      })
+    // Fetch real chart data instead of generating mock data
+    const fetchChartData = async () => {
+      try {
+        setLoading(true)
+        // For now, set empty data to avoid showing mock data
+        // In production, this would fetch real price and volume data from the database
+        setChartData([])
+      } catch (error) {
+        console.error('Error fetching chart data:', error)
+        setChartData([])
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setChartData(data)
-    setLoading(false)
-  }
+    fetchChartData()
+  }, [timeRange, currentPrice])
 
   const formatVolume = (value: number) => {
     if (value >= 1000000000) {

@@ -8,6 +8,7 @@ interface ResolutionConfig {
   headerHeight: string;
   gridGap: string;
   marketOverviewCols: number;
+  defiMetricsCols: number;
   textScale: number;
 }
 
@@ -23,6 +24,7 @@ export const useResolution = () => {
     headerHeight: '16',
     gridGap: '6',
     marketOverviewCols: 7,
+    defiMetricsCols: 3,
     textScale: 1,
   });
 
@@ -42,6 +44,7 @@ export const useResolution = () => {
           headerHeight: '20',
           gridGap: '8',
           marketOverviewCols: 7,
+          defiMetricsCols: 3,
           textScale: 1.4,
         };
       } else if (width >= 1920) { // Full HD
@@ -51,6 +54,7 @@ export const useResolution = () => {
           headerHeight: '16',
           gridGap: '6',
           marketOverviewCols: 7,
+          defiMetricsCols: 3,
           textScale: 1.2,
         };
       } else if (width >= 1440) { // Laptop lớn
@@ -60,6 +64,7 @@ export const useResolution = () => {
           headerHeight: '14',
           gridGap: '4',
           marketOverviewCols: 6,
+          defiMetricsCols: 3,
           textScale: 1.0,
         };
       } else if (width >= 1024) { // Tablet
@@ -69,6 +74,7 @@ export const useResolution = () => {
           headerHeight: '12',
           gridGap: '4',
           marketOverviewCols: 4,
+          defiMetricsCols: 2,
           textScale: 0.9,
         };
       } else { // Mobile
@@ -78,6 +84,7 @@ export const useResolution = () => {
           headerHeight: '12',
           gridGap: '3',
           marketOverviewCols: 2,
+          defiMetricsCols: 1,
           textScale: 0.8,
         };
       }

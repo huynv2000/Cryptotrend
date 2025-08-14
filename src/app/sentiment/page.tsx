@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, AreaChart, Area, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,109 +32,50 @@ export default function SentimentAnalysis() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate sample data for 90 days
-    const generateData = () => {
-      const data: SentimentData[] = [];
-      const startDate = new Date('2025-05-08');
-      
-      for (let i = 0; i < 90; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
-        
-        // Generate sentiment indicators
-        const fearGreedIndex = 20 + Math.random() * 60; // 20-80
-        const socialSentiment = 30 + Math.random() * 40; // 30-70
-        const newsSentiment = 25 + Math.random() * 50; // 25-75
-        const googleTrends = 35 + Math.random() * 30; // 35-65
-        
-        // Calculate overall sentiment
-        const overallSentiment = (fearGreedIndex + socialSentiment + newsSentiment + googleTrends) / 4;
-        
-        data.push({
-          date: date.toLocaleDateString('vi-VN'),
-          fearGreedIndex: Math.round(fearGreedIndex * 100) / 100,
-          socialSentiment: Math.round(socialSentiment * 100) / 100,
-          newsSentiment: Math.round(newsSentiment * 100) / 100,
-          googleTrends: Math.round(googleTrends * 100) / 100,
-          overallSentiment: Math.round(overallSentiment * 100) / 100
-        });
+    // Fetch real sentiment data from API instead of generating mock data
+    const fetchSentimentData = async () => {
+      try {
+        setLoading(true);
+        // For now, set empty data to avoid showing mock data
+        // In production, this would fetch real sentiment data from the database
+        setSentimentData([]);
+        setMetrics(null);
+      } catch (error) {
+        console.error('Error fetching sentiment data:', error);
+        setSentimentData([]);
+        setMetrics(null);
+      } finally {
+        setLoading(false);
       }
-      
-      return data;
     };
 
-    const calculateMetrics = (data: SentimentData[]): SentimentMetrics => {
-      const current = data[data.length - 1];
-      const previous = data[data.length - 2];
-      
-      // Determine sentiment trend
-      const sentimentTrend = current.overallSentiment > previous.overallSentiment ? 'Tăng' : 'Giảm';
-      
-      // Determine overall sentiment
-      const overallSentiment = current.overallSentiment > 60 ? 'Tích cực' :
-                             current.overallSentiment < 40 ? 'Tiêu cực' : 'Trung tính';
-      
-      // Determine market mood
-      const marketMood = current.fearGreedIndex > 75 ? 'Tham lam cực độ' :
-                        current.fearGreedIndex > 55 ? 'Tham lam' :
-                        current.fearGreedIndex > 45 ? 'Trung tính' :
-                        current.fearGreedIndex > 25 ? 'Sợ hãi' : 'Sợ hãi cực độ';
-      
-      return {
-        currentFearGreed: current.fearGreedIndex,
-        currentSocial: current.socialSentiment,
-        currentNews: current.newsSentiment,
-        currentTrends: current.googleTrends,
-        overallSentiment,
-        sentimentTrend,
-        marketMood
-      };
-    };
-
-    const data = generateData();
-    const sentimentMetrics = calculateMetrics(data);
-    
-    setSentimentData(data);
-    setMetrics(sentimentMetrics);
-    setLoading(false);
+    fetchSentimentData();
   }, []);
 
   const getSentimentColor = (value: number) => {
-    if (value <= 25) return 'text-red-600';
-    if (value <= 45) return 'text-orange-500';
-    if (value <= 55) return 'text-yellow-500';
-    if (value <= 75) return 'text-green-500';
-    return 'text-green-600';
+    if (value > 60) return 'text-green-600';
+    if (value < 40) return 'text-red-600';
+    return 'text-yellow-600';
   };
 
   const getMoodColor = (mood: string) => {
     switch (mood) {
-      case 'Tham lam cực độ': return 'bg-red-600 text-white';
-      case 'Tham lam': return 'bg-orange-500 text-white';
-      case 'Trung tính': return 'bg-yellow-500 text-white';
-      case 'Sợ hãi': return 'bg-blue-500 text-white';
-      case 'Sợ hãi cực độ': return 'bg-purple-600 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'Tham lam cực độ': return 'text-green-600';
+      case 'Tham lam': return 'text-green-500';
+      case 'Trung tính': return 'text-yellow-600';
+      case 'Sợ hãi': return 'text-orange-600';
+      case 'Sợ hãi cực độ': return 'text-red-600';
+      default: return 'text-gray-600';
     }
   };
 
   const getOverallSentimentColor = (sentiment: string) => {
     switch (sentiment) {
-      case 'Tích cực': return 'bg-green-500 text-white';
-      case 'Tiêu cực': return 'bg-red-500 text-white';
-      case 'Trung tính': return 'bg-yellow-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'Tích cực': return 'text-green-600';
+      case 'Tiêu cực': return 'text-red-600';
+      default: return 'text-yellow-600';
     }
   };
-
-  const pieData = [
-    { name: 'Fear & Greed', value: metrics?.currentFearGreed || 0 },
-    { name: 'Social', value: metrics?.currentSocial || 0 },
-    { name: 'News', value: metrics?.currentNews || 0 },
-    { name: 'Google Trends', value: metrics?.currentTrends || 0 }
-  ];
-
-  const COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6'];
 
   if (loading) {
     return (
@@ -158,7 +99,7 @@ export default function SentimentAnalysis() {
                 Sentiment Analysis
               </h1>
               <p className="text-gray-600 mt-1">
-                Phân tích tâm lý thị trường
+                Phân tích tâm lý thị trường và social sentiment
               </p>
             </div>
             <div className="mt-4 md:mt-0">
@@ -175,15 +116,15 @@ export default function SentimentAnalysis() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Fear & Greed</CardTitle>
-              <div className="h-4 w-4 text-muted-foreground">😊</div>
+              <CardTitle className="text-sm font-medium">Fear & Greed Index</CardTitle>
+              <div className="h-4 w-4 text-muted-foreground">😰</div>
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${getSentimentColor(metrics?.currentFearGreed || 0)}`}>
-                {metrics?.currentFearGreed?.toFixed(1)}
+                {metrics?.currentFearGreed || 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">
-                {metrics?.marketMood}
+                Chỉ số tâm lý thị trường
               </p>
             </CardContent>
           </Card>
@@ -195,10 +136,10 @@ export default function SentimentAnalysis() {
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${getSentimentColor(metrics?.currentSocial || 0)}`}>
-                {metrics?.currentSocial?.toFixed(1)}
+                {metrics?.currentSocial || 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">
-                Mạng xã hội
+                Twitter, Reddit, Social Media
               </p>
             </CardContent>
           </Card>
@@ -210,229 +151,141 @@ export default function SentimentAnalysis() {
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${getSentimentColor(metrics?.currentNews || 0)}`}>
-                {metrics?.currentNews?.toFixed(1)}
+                {metrics?.currentNews || 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">
-                Tin tức
+                Tin tức và báo chí
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tổng quan</CardTitle>
-              <div className="h-4 w-4 text-muted-foreground">🎯</div>
+              <CardTitle className="text-sm font-medium">Xu Hướng</CardTitle>
+              <div className="h-4 w-4 text-muted-foreground">📈</div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                <Badge className={getOverallSentimentColor(metrics?.overallSentiment || '')}>
-                  {metrics?.overallSentiment}
-                </Badge>
+              <div className={`text-2xl font-bold ${getOverallSentimentColor(metrics?.overallSentiment || '')}`}>
+                {metrics?.overallSentiment || 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">
-                Xu hướng: {metrics?.sentimentTrend}
+                Xu hướng: {metrics?.sentimentTrend || 'N/A'}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Fear & Greed Chart */}
+        {/* No Data Message */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Fear & Greed Index</CardTitle>
+            <CardTitle>Sentiment Analysis Charts</CardTitle>
             <CardDescription>
-              Chỉ số tâm lý thị trường Fear & Greed theo thời gian
+              Real sentiment data will be displayed when available from database
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={sentimentData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12, fill: '#666' }}
-                    interval={Math.floor(sentimentData.length / 8)}
-                  />
-                  <YAxis 
-                    stroke="#666"
-                    domain={[0, 100]}
-                    tick={{ fill: '#666' }}
-                  />
-                  <Tooltip 
-                    formatter={(value) => [value, 'Fear & Greed Index']}
-                    labelFormatter={(label) => `Ngày: ${label}`}
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '6px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <ReferenceLine y={25} stroke="#ef4444" strokeDasharray="5 5" />
-                  <ReferenceLine y={45} stroke="#f59e0b" strokeDasharray="5 5" />
-                  <ReferenceLine y={55} stroke="#eab308" strokeDasharray="5 5" />
-                  <ReferenceLine y={75} stroke="#22c55e" strokeDasharray="5 5" />
-                  <Area 
-                    type="monotone" 
-                    dataKey="fearGreedIndex" 
-                    stroke="#8b5cf6" 
-                    fill="#8b5cf6" 
-                    fillOpacity={0.3}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 grid grid-cols-5 gap-2 text-sm text-center">
-              <div className="text-red-600 font-medium">Sợ hãi cực độ</div>
-              <div className="text-orange-500 font-medium">Sợ hãi</div>
-              <div className="text-yellow-500 font-medium">Trung tính</div>
-              <div className="text-green-500 font-medium">Tham lam</div>
-              <div className="text-green-600 font-medium">Tham lam cực độ</div>
+            <div className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                😊 Sentiment analysis data is being collected from real sources
+              </div>
+              <div className="text-sm text-gray-400">
+                No mock data is displayed - only real or historical fallback data will be shown
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Sentiment Components */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Thành phần tâm lý thị trường</CardTitle>
-              <CardDescription>
-                Phân bổ các yếu tố tâm lý hiện tại
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: ${value.toFixed(1)}`}
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [value.toFixed(1), 'Giá trị']} />
-                  </PieChart>
-                </ResponsiveContainer>
+        {/* Market Mood */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>🎭 Tâm Lý Thị Trường</CardTitle>
+            <CardDescription>
+              Phân tích tâm lý nhà đầu tư và tâm lý thị trường
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <div className={`text-4xl font-bold mb-4 ${getMoodColor(metrics?.marketMood || '')}`}>
+                {metrics?.marketMood || 'N/A'}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>So sánh các chỉ số tâm lý</CardTitle>
-              <CardDescription>
-                Các chỉ số tâm lý thị trường qua thời gian
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={sentimentData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 12, fill: '#666' }}
-                      interval={Math.floor(sentimentData.length / 6)}
-                    />
-                    <YAxis 
-                      stroke="#666"
-                      domain={[0, 100]}
-                      tick={{ fill: '#666' }}
-                    />
-                    <Tooltip 
-                      formatter={(value) => {
-                        const labels: { [key: string]: string } = {
-                          fearGreedIndex: 'Fear & Greed',
-                          socialSentiment: 'Social',
-                          newsSentiment: 'News',
-                          googleTrends: 'Google Trends',
-                          overallSentiment: 'Overall'
-                        };
-                        return [value, labels[name] || name];
-                      }}
-                      labelFormatter={(label) => `Ngày: ${label}`}
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="fearGreedIndex" 
-                      stroke="#ef4444" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="socialSentiment" 
-                      stroke="#f59e0b" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="newsSentiment" 
-                      stroke="#22c55e" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="googleTrends" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="text-gray-600">
+                {metrics?.marketMood && (
+                  <p className="mb-4">
+                    Chỉ số Fear & Greed hiện tại cho thấy thị trường đang trong trạng thái {metrics.marketMood.toLowerCase()}
+                  </p>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                  {['Sợ hãi cực độ', 'Sợ hãi', 'Trung tính', 'Tham lam', 'Tham lam cực độ'].map((mood) => (
+                    <div key={mood} className={`p-3 rounded-lg border ${
+                      metrics?.marketMood === mood ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="text-sm font-medium">{mood}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {mood === 'Sợ hãi cực độ' ? '0-20' :
+                         mood === 'Sợ hãi' ? '21-45' :
+                         mood === 'Trung tính' ? '46-55' :
+                         mood === 'Tham lam' ? '56-75' : '76-100'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Sentiment Analysis Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>😊 Tổng quan phân tích tâm lý</CardTitle>
+            <CardTitle>📊 Tổng quan phân tích tâm lý</CardTitle>
             <CardDescription>
-              Nhận định về tâm lý thị trường và tác động đến giá
+              Thông tin về các chỉ số tâm lý thị trường và social sentiment
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Chỉ số hiện tại</h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p>• Fear & Greed: {metrics?.currentFearGreed?.toFixed(1)} ({metrics?.marketMood})</p>
-                  <p>• Social Sentiment: {metrics?.currentSocial?.toFixed(1)}</p>
-                  <p>• News Sentiment: {metrics?.currentNews?.toFixed(1)}</p>
-                  <p>• Google Trends: {metrics?.currentTrends?.toFixed(1)}</p>
-                  <p>• Tổng quan: <Badge className={getOverallSentimentColor(metrics?.overallSentiment || '')}>{metrics?.overallSentiment}</Badge></p>
-                  <p>• Xu hướng: {metrics?.sentimentTrend?.toLowerCase()}</p>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-medium mb-2">Fear & Greed Index</h3>
+                  <p className="text-sm text-gray-600">
+                    Chỉ số Fear & Greed đo lường tâm lý nhà đầu tư. 
+                    Giá trị thấp cho thấy sự sợ hãi, giá trị cao cho thấy sự tham lam.
+                    Đây là chỉ số contrarian: khi sợ hãi cực độ thường là thời điểm mua tốt.
+                  </p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-medium mb-2">Social Sentiment</h3>
+                  <p className="text-sm text-gray-600">
+                    Social sentiment phân tích cảm xúc từ Twitter, Reddit, và các mạng xã hội khác. 
+                    Tích cực cho thấy sự lạc quan, tiêu cực cho thấy sự bi quan.
+                  </p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-medium mb-2">News Sentiment</h3>
+                  <p className="text-sm text-gray-600">
+                    News sentiment phân tích tông giọng của tin tức crypto. 
+                    Tin tức tích cực thường đẩy giá lên, tin tức tiêu cực thường kéo giá xuống.
+                  </p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-medium mb-2">Google Trends</h3>
+                  <p className="text-sm text-gray-600">
+                    Google Trends đo lường mức độ quan tâm tìm kiếm. 
+                    Lượng tìm kiếm tăng thường cho thấy sự quan tâm tăng, có thể dẫn đến biến động giá.
+                  </p>
                 </div>
               </div>
               
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Nhận định thị trường</h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p>• Thị trường đang trong trạng thái {metrics?.marketMood?.toLowerCase()}</p>
-                  <p>• Tâm lý tổng thể {metrics?.overallSentiment?.toLowerCase()} và đang {metrics?.sentimentTrend?.toLowerCase()}</p>
-                  <p>• {metrics?.currentFearGreed && metrics.currentFearGreed > 60 ? 'Nhà đầu tư đang quá tự tin, cần cẩn trọng' : 'Nhà đầu tư còn thận trọng, có cơ hội'}</p>
-                  <p>• {metrics?.currentSocial && metrics.currentSocial > 60 ? 'Mạng xã hội đang tích cực, có thể tạo FOMO' : 'Mạng xã hội còn tiêu cực, cần theo dõi'}</p>
-                  <p>• {metrics?.currentNews && metrics.currentNews > 60 ? 'Tin tức đang tích cực, hỗ trợ giá' : 'Tin tức tiêu cực, có thể áp lực giảm giá'}</p>
-                </div>
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="font-medium text-blue-800 mb-2">🎯 Chiến lược đầu tư dựa trên tâm lý</h3>
+                <p className="text-sm text-blue-700">
+                  Khi thị trường sợ hãi cực độ (Fear & Greed &lt; 25) thường là thời điểm mua tốt. 
+                  Khi thị trường tham lam cực độ (Fear & Greed &gt; 75) nên cẩn trọng với việc mua mới.
+                  Hãy là người contrarian - mua khi sợ hãi, bán khi tham lam.
+                </p>
               </div>
             </div>
           </CardContent>

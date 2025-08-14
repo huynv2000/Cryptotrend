@@ -11,6 +11,7 @@ interface ResolutionContextType {
     headerHeight: string;
     gridGap: string;
     marketOverviewCols: number;
+    defiMetricsCols: number;
     textScale: number;
   };
   getFontSizeClass: (type?: 'xs' | 'sm' | 'base' | 'lg' | 'xl') => string;

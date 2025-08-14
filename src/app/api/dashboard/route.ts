@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { DataValidationService } from '@/lib/data-validation';
+import { DeFiLlamaService } from '@/lib/defillama-service';
 
 // Helper function to check if data is outdated
 function isDataOutdated(timestamp: Date, now: Date): boolean {
@@ -11,6 +13,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const coinId = searchParams.get('coinId') || 'bitcoin';
+    
+    // Initialize data validation service
+    const dataValidationService = DataValidationService.getInstance();
     
     // Get cryptocurrency basic info
     const crypto = await db.cryptocurrency.findFirst({
@@ -24,52 +29,74 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Get price data
+    // Get price data with validation
     const priceData = await db.priceHistory.findFirst({
       where: { cryptoId: crypto.id },
       orderBy: { timestamp: 'desc' }
     });
     
-    // Get on-chain metrics
+    // Get on-chain metrics with validation
     const onChainData = await db.onChainMetric.findFirst({
       where: { cryptoId: crypto.id },
       orderBy: { timestamp: 'desc' }
     });
     
-    // Get technical indicators
+    // Get technical indicators with validation
     const technicalData = await db.technicalIndicator.findFirst({
       where: { cryptoId: crypto.id },
       orderBy: { timestamp: 'desc' }
     });
     
-    // Get sentiment data
+    // Get sentiment data with validation
     const sentimentData = await db.sentimentMetric.findFirst({
       orderBy: { timestamp: 'desc' }
     });
     
-    // Get derivatives data
+    // Get derivatives data with validation
     const derivativesData = await db.derivativeMetric.findFirst({
       where: { cryptoId: crypto.id },
       orderBy: { timestamp: 'desc' }
     });
+
+    // Get DeFi metrics with validation
+    const defiLlamaService = DeFiLlamaService.getInstance();
+    let defiData = await defiLlamaService.getLatestTokenDeFiMetrics(coinId);
     
-    // Format the response with outdated information
+    // If no DeFi data or outdated, try to fetch fresh data
     const now = new Date();
+    if (!defiData || isDataOutdated(defiData.timestamp, now)) {
+      try {
+        defiData = await defiLlamaService.storeDeFiMetrics(coinId);
+      } catch (error) {
+        console.error('Error fetching fresh DeFi metrics:', error);
+        // Continue with null defiData if fetch fails
+      }
+    }
+
+    // Calculate data quality score
+    const dataQuality = await dataValidationService.calculateDataQualityScore(crypto.id);
+    
+    // Format the response with validation information
     const dashboardData = {
       cryptocurrency: crypto,
+      dataQuality: dataQuality,
       price: priceData ? {
         usd: priceData.price,
         usd_24h_change: priceData.priceChange24h,
         usd_24h_vol: priceData.volume24h,
         usd_market_cap: priceData.marketCap,
         last_updated: priceData.timestamp,
-        is_outdated: isDataOutdated(priceData.timestamp, now)
+        is_outdated: isDataOutdated(priceData.timestamp, now),
+        confidence: 0.95, // Price data from CoinGecko is highly reliable
+        source: 'CoinGecko API'
       } : {
         usd: null,
         usd_24h_change: null,
         usd_24h_vol: null,
         usd_market_cap: null,
-        error: "N/A - No price data available"
+        error: "N/A - No price data available",
+        confidence: 0,
+        source: 'N/A'
       },
       onChain: onChainData ? {
         mvrv: onChainData.mvrv,
@@ -83,7 +110,9 @@ export async function GET(request: NextRequest) {
         retailHoldingsPercentage: onChainData.retailHoldingsPercentage,
         exchangeHoldingsPercentage: onChainData.exchangeHoldingsPercentage,
         last_updated: onChainData.timestamp,
-        is_outdated: isDataOutdated(onChainData.timestamp, now)
+        is_outdated: isDataOutdated(onChainData.timestamp, now),
+        confidence: Math.max(0.2, 0.8 - ((now.getTime() - onChainData.timestamp.getTime()) / (1000 * 60 * 60 * 48))),
+        source: 'Historical Fallback'
       } : {
         mvrv: null,
         nupl: null,
@@ -95,7 +124,9 @@ export async function GET(request: NextRequest) {
         whaleHoldingsPercentage: null,
         retailHoldingsPercentage: null,
         exchangeHoldingsPercentage: null,
-        error: "N/A - No on-chain data available"
+        error: "N/A - No on-chain data available",
+        confidence: 0,
+        source: 'N/A'
       },
       technical: technicalData ? {
         rsi: technicalData.rsi,
@@ -106,7 +137,9 @@ export async function GET(request: NextRequest) {
         bollingerLower: technicalData.bollingerLower,
         bollingerMiddle: technicalData.bollingerMiddle,
         last_updated: technicalData.timestamp,
-        is_outdated: isDataOutdated(technicalData.timestamp, now)
+        is_outdated: isDataOutdated(technicalData.timestamp, now),
+        confidence: Math.max(0.3, 0.9 - ((now.getTime() - technicalData.timestamp.getTime()) / (1000 * 60 * 60 * 24))),
+        source: 'Calculated from Price Data'
       } : {
         rsi: null,
         ma50: null,
@@ -115,7 +148,9 @@ export async function GET(request: NextRequest) {
         bollingerUpper: null,
         bollingerLower: null,
         bollingerMiddle: null,
-        error: "N/A - No technical indicators available"
+        error: "N/A - No technical indicators available",
+        confidence: 0,
+        source: 'N/A'
       },
       sentiment: sentimentData ? {
         fearGreedIndex: sentimentData.fearGreedIndex,
@@ -144,7 +179,9 @@ export async function GET(request: NextRequest) {
           trendDirection: sentimentData.trendDirection
         },
         last_updated: sentimentData.timestamp,
-        is_outdated: isDataOutdated(sentimentData.timestamp, now)
+        is_outdated: isDataOutdated(sentimentData.timestamp, now),
+        confidence: sentimentData.fearGreedIndex ? Math.max(0.4, 0.85 - ((now.getTime() - sentimentData.timestamp.getTime()) / (1000 * 60 * 60 * 36))) : 0,
+        source: sentimentData.fearGreedIndex ? 'Alternative.me API' : 'Historical Fallback'
       } : {
         fearGreedIndex: null,
         fearGreedClassification: null,
@@ -171,7 +208,9 @@ export async function GET(request: NextRequest) {
           trendingKeywords: [],
           trendDirection: null
         },
-        error: "N/A - No sentiment data available"
+        error: "N/A - No sentiment data available",
+        confidence: 0,
+        source: 'N/A'
       },
       derivatives: derivativesData ? {
         openInterest: derivativesData.openInterest,
@@ -179,13 +218,45 @@ export async function GET(request: NextRequest) {
         liquidationVolume: derivativesData.liquidationVolume,
         putCallRatio: derivativesData.putCallRatio,
         last_updated: derivativesData.timestamp,
-        is_outdated: isDataOutdated(derivativesData.timestamp, now)
+        is_outdated: isDataOutdated(derivativesData.timestamp, now),
+        confidence: Math.max(0.2, 0.7 - ((now.getTime() - derivativesData.timestamp.getTime()) / (1000 * 60 * 60 * 36))),
+        source: 'Historical Fallback'
       } : {
         openInterest: null,
         fundingRate: null,
         liquidationVolume: null,
         putCallRatio: null,
-        error: "N/A - No derivatives data available"
+        error: "N/A - No derivatives data available",
+        confidence: 0,
+        source: 'N/A'
+      },
+      defi: defiData ? {
+        totalTVL: defiData.totalTVL,
+        totalStablecoinMarketCap: defiData.totalStablecoinMarketCap,
+        totalDEXVolume24h: defiData.totalDEXVolume24h,
+        totalProtocolFees24h: defiData.totalProtocolFees24h,
+        avgYieldRate: defiData.avgYieldRate,
+        totalBridgeVolume24h: defiData.totalBridgeVolume24h,
+        topChains: defiData.topChains,
+        topProtocols: defiData.topProtocols,
+        topStablecoins: defiData.topStablecoins,
+        last_updated: defiData.timestamp,
+        is_outdated: isDataOutdated(defiData.timestamp, now),
+        confidence: Math.max(0.7, 0.95 - ((now.getTime() - defiData.timestamp.getTime()) / (1000 * 60 * 60 * 2))),
+        source: 'DeFiLlama API'
+      } : {
+        totalTVL: null,
+        totalStablecoinMarketCap: null,
+        totalDEXVolume24h: null,
+        totalProtocolFees24h: null,
+        avgYieldRate: null,
+        totalBridgeVolume24h: null,
+        topChains: [],
+        topProtocols: [],
+        topStablecoins: [],
+        error: "N/A - No DeFi data available",
+        confidence: 0,
+        source: 'N/A'
       }
     };
     

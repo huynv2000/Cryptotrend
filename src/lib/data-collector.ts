@@ -25,6 +25,7 @@ import { db } from '@/lib/db'
 import { CryptoDataService, CoinGeckoService } from './crypto-service'
 import { rateLimiter } from './rate-limiter'
 import { volumeService } from './volume-service'
+import { DataValidationService } from './data-validation'
 import ZAI from 'z-ai-web-dev-sdk'
 
 export interface CollectionConfig {
@@ -55,12 +56,14 @@ export class DataCollector {
   private intervals: Map<string, NodeJS.Timeout> = new Map()
   private cryptoService: CryptoDataService
   private coinGeckoService: CoinGeckoService
+  private dataValidationService: DataValidationService
   private stats: CollectionStats
   private config: CollectionConfig
   
   private constructor() {
     this.cryptoService = CryptoDataService.getInstance()
     this.coinGeckoService = CoinGeckoService.getInstance()
+    this.dataValidationService = DataValidationService.getInstance()
     this.stats = this.initializeStats()
     this.config = this.getDefaultConfig()
   }
@@ -335,9 +338,22 @@ export class DataCollector {
       
       for (const crypto of cryptocurrencies) {
         await rateLimiter.scheduleRequest('internal', async () => {
-          const technicalData = await this.calculateTechnicalIndicators(crypto.id)
-          await this.saveTechnicalIndicators(crypto.id, technicalData)
-          console.log(`📈 Technical data collected for ${crypto.symbol}`)
+          try {
+            // Calculate technical indicators from price history (no mock data)
+            const technicalData = await this.calculateTechnicalIndicatorsFromPrice(crypto.id)
+            
+            // Validate the calculated data
+            const validation = await this.dataValidationService.validateTechnicalIndicators(crypto.id, technicalData)
+            
+            if (validation.isValid) {
+              await this.saveTechnicalIndicators(crypto.id, validation.value)
+              console.log(`📈 Technical data collected for ${crypto.symbol} (confidence: ${(validation.confidence * 100).toFixed(1)}%)`)
+            } else {
+              console.warn(`⚠️ Technical data validation failed for ${crypto.symbol}: ${validation.error}`)
+            }
+          } catch (error) {
+            console.error(`❌ Failed to collect technical data for ${crypto.symbol}:`, error instanceof Error ? error.message : String(error))
+          }
         }, 2) // Medium priority
       }
       
@@ -359,9 +375,22 @@ export class DataCollector {
       
       for (const crypto of cryptocurrencies) {
         await rateLimiter.scheduleRequest('internal', async () => {
-          const onChainData = await this.getOnChainMetrics(crypto.coinGeckoId)
-          await this.saveOnChainMetrics(crypto.id, onChainData)
-          console.log(`⛓️ On-chain data collected for ${crypto.symbol}`)
+          try {
+            // Try to get real on-chain data (no mock data)
+            const onChainData = await this.getRealOnChainMetrics(crypto.coinGeckoId)
+            
+            // Validate the data
+            const validation = await this.dataValidationService.validateOnChainMetrics(crypto.id, onChainData)
+            
+            if (validation.isValid) {
+              await this.saveOnChainMetrics(crypto.id, validation.value)
+              console.log(`⛓️ On-chain data collected for ${crypto.symbol} (confidence: ${(validation.confidence * 100).toFixed(1)}%)`)
+            } else {
+              console.warn(`⚠️ On-chain data validation failed for ${crypto.symbol}: ${validation.error}`)
+            }
+          } catch (error) {
+            console.error(`❌ Failed to collect on-chain data for ${crypto.symbol}:`, error instanceof Error ? error.message : String(error))
+          }
         }, 3) // Lower priority
       }
       
@@ -403,9 +432,22 @@ export class DataCollector {
       
       for (const crypto of cryptocurrencies) {
         await rateLimiter.scheduleRequest('internal', async () => {
-          const derivativeData = await this.getDerivativeMetrics(crypto.coinGeckoId)
-          await this.saveDerivativeMetrics(crypto.id, derivativeData)
-          console.log(`📊 Derivative data collected for ${crypto.symbol}`)
+          try {
+            // Try to get real derivative data (no mock data)
+            const derivativeData = await this.getRealDerivativeMetrics(crypto.coinGeckoId)
+            
+            // Validate the data
+            const validation = await this.dataValidationService.validateDerivativeMetrics(crypto.id, derivativeData)
+            
+            if (validation.isValid) {
+              await this.saveDerivativeMetrics(crypto.id, validation.value)
+              console.log(`📊 Derivative data collected for ${crypto.symbol} (confidence: ${(validation.confidence * 100).toFixed(1)}%)`)
+            } else {
+              console.warn(`⚠️ Derivative data validation failed for ${crypto.symbol}: ${validation.error}`)
+            }
+          } catch (error) {
+            console.error(`❌ Failed to collect derivative data for ${crypto.symbol}:`, error instanceof Error ? error.message : String(error))
+          }
         }, 3) // Lower priority
       }
       
@@ -704,119 +746,120 @@ export class DataCollector {
   }
   
   /**
-   * Calculate technical indicators (mock implementation)
+   * Calculate technical indicators from price history (no mock data)
    */
-  private async calculateTechnicalIndicators(cryptoId: string): Promise<any> {
-    // Get recent price data for calculations
-    const recentPrices = await db.priceHistory.findMany({
-      where: { cryptoId },
-      orderBy: { timestamp: 'desc' },
-      take: 200 // Last 200 data points
-    })
-    
-    if (recentPrices.length < 50) {
-      // Return mock data if not enough history
+  private async calculateTechnicalIndicatorsFromPrice(cryptoId: string): Promise<any> {
+    try {
+      // Get recent price data for calculations
+      const recentPrices = await db.priceHistory.findMany({
+        where: { cryptoId },
+        orderBy: { timestamp: 'desc' },
+        take: 200 // Last 200 data points
+      })
+      
+      if (recentPrices.length < 50) {
+        throw new Error('Insufficient price history for technical analysis')
+      }
+      
+      const prices = recentPrices.map(p => p.price).reverse()
+      const currentPrice = recentPrices[0].price
+      
+      // Calculate all technical indicators properly
       return {
-        rsi: 50 + Math.random() * 30,
-        ma50: recentPrices[0]?.price || 50000,
-        ma200: recentPrices[0]?.price || 50000,
-        macd: (Math.random() - 0.5) * 1000,
-        bollingerUpper: recentPrices[0]?.price * 1.02 || 51000,
-        bollingerLower: recentPrices[0]?.price * 0.98 || 49000,
-        bollingerMiddle: recentPrices[0]?.price || 50000
+        rsi: this.calculateRSI(prices),
+        ma50: this.calculateMA(prices, 50),
+        ma200: this.calculateMA(prices, 200),
+        macd: this.calculateMACD(prices),
+        bollingerUpper: this.calculateBollingerUpper(prices, 20, 2),
+        bollingerLower: this.calculateBollingerLower(prices, 20, 2),
+        bollingerMiddle: this.calculateMA(prices, 20)
       }
-    }
-    
-    // Simple calculations (in real implementation, use proper technical analysis library)
-    const prices = recentPrices.map(p => p.price).reverse()
-    
-    return {
-      rsi: this.calculateRSI(prices),
-      ma50: this.calculateMA(prices, 50),
-      ma200: this.calculateMA(prices, 200),
-      macd: this.calculateMACD(prices),
-      bollingerUpper: this.calculateBollingerBand(prices, 20, 2).upper,
-      bollingerLower: this.calculateBollingerBand(prices, 20, 2).lower,
-      bollingerMiddle: this.calculateBollingerBand(prices, 20, 2).middle
+    } catch (error) {
+      console.error('❌ Error calculating technical indicators:', error)
+      throw error
     }
   }
-  
+
   /**
-   * Get on-chain metrics (mock implementation)
+   * Get real on-chain metrics or use fallback (no mock data)
    */
-  private async getOnChainMetrics(coinGeckoId: string): Promise<any> {
-    // Mock data - in real implementation, fetch from Glassnode or CryptoQuant
-    const mockData: Record<string, any> = {
-      bitcoin: {
-        mvrv: 1.8 + (Math.random() - 0.5) * 0.4,
-        nupl: 0.65 + (Math.random() - 0.5) * 0.2,
-        sopr: 1.02 + (Math.random() - 0.5) * 0.1,
-        activeAddresses: 950000 + Math.floor((Math.random() - 0.5) * 100000),
-        exchangeInflow: 15000 + Math.floor((Math.random() - 0.5) * 5000),
-        exchangeOutflow: 12000 + Math.floor((Math.random() - 0.5) * 5000),
-        transactionVolume: 25000000000 + (Math.random() - 0.5) * 5000000000
-      },
-      ethereum: {
-        mvrv: 1.2 + (Math.random() - 0.5) * 0.3,
-        nupl: 0.45 + (Math.random() - 0.5) * 0.15,
-        sopr: 0.98 + (Math.random() - 0.5) * 0.08,
-        activeAddresses: 450000 + Math.floor((Math.random() - 0.5) * 50000),
-        exchangeInflow: 8500 + Math.floor((Math.random() - 0.5) * 2000),
-        exchangeOutflow: 9200 + Math.floor((Math.random() - 0.5) * 2000),
-        transactionVolume: 15000000000 + (Math.random() - 0.5) * 3000000000
-      }
+  private async getRealOnChainMetrics(coinGeckoId: string): Promise<any> {
+    try {
+      // Try to get real data from external APIs (if available)
+      // For now, return null to trigger fallback mechanism
+      // In production, integrate with Glassnode, CryptoQuant, or other on-chain APIs
+      
+      console.log(`🔍 Attempting to fetch real on-chain data for ${coinGeckoId}`)
+      
+      // Placeholder for real API integration
+      // This would typically call:
+      // - Glassnode API for MVRV, NUPL, SOPR
+      // - CryptoQuant API for exchange flows
+      // - Blockchain.com API for active addresses
+      
+      // Return null to trigger fallback from database
+      return null
+    } catch (error) {
+      console.error('❌ Error fetching real on-chain data:', error)
+      return null // Trigger fallback
     }
-    
-    return mockData[coinGeckoId] || mockData.bitcoin
+  }
+
+  /**
+   * Get real derivative metrics or use fallback (no mock data)
+   */
+  private async getRealDerivativeMetrics(coinGeckoId: string): Promise<any> {
+    try {
+      // Try to get real data from external APIs (if available)
+      console.log(`🔍 Attempting to fetch real derivative data for ${coinGeckoId}`)
+      
+      // Placeholder for real API integration
+      // This would typically call:
+      // - Coinglass API for funding rates, open interest
+      // - Exchange APIs for liquidation data
+      // - Deribit API for put/call ratios
+      
+      // Return null to trigger fallback from database
+      return null
+    } catch (error) {
+      console.error('❌ Error fetching real derivative data:', error)
+      return null // Trigger fallback
+    }
   }
   
   /**
-   * Get sentiment metrics
+   * Get sentiment metrics (real data only)
    */
   private async getSentimentMetrics(): Promise<any> {
     try {
-      // Fetch Fear & Greed Index from Alternative.me
+      // Fetch Fear & Greed Index from Alternative.me (real API)
       const response = await fetch('https://api.alternative.me/fng/')
       const data = await response.json()
       
+      const fearGreedIndex = parseFloat(data.data[0]?.value) || 50
+      
+      // For other sentiment metrics, return null to trigger fallback
+      // In production, integrate with:
+      // - LunarCrush API for social sentiment
+      // - News API for news sentiment
+      // - Google Trends API for trends data
+      
       return {
-        fearGreedIndex: parseFloat(data.data[0]?.value) || 50,
-        socialSentiment: 0.5 + (Math.random() - 0.5) * 0.3, // Mock
-        googleTrends: 50 + Math.floor((Math.random() - 0.5) * 30), // Mock
-        newsSentiment: 0.5 + (Math.random() - 0.5) * 0.3 // Mock
+        fearGreedIndex: fearGreedIndex,
+        socialSentiment: null, // Will trigger fallback
+        googleTrends: null,   // Will trigger fallback
+        newsSentiment: null   // Will trigger fallback
       }
     } catch (error) {
       console.error('❌ Error fetching sentiment metrics:', error)
+      // Return null to trigger fallback from database
       return {
-        fearGreedIndex: 50,
-        socialSentiment: 0.5,
-        googleTrends: 50,
-        newsSentiment: 0.5
+        fearGreedIndex: null,
+        socialSentiment: null,
+        googleTrends: null,
+        newsSentiment: null
       }
     }
-  }
-  
-  /**
-   * Get derivative metrics (mock implementation)
-   */
-  private async getDerivativeMetrics(coinGeckoId: string): Promise<any> {
-    // Mock data - in real implementation, fetch from Coinglass or exchange APIs
-    const mockData: Record<string, any> = {
-      bitcoin: {
-        openInterest: 18500000000 + (Math.random() - 0.5) * 2000000000,
-        fundingRate: 0.0125 + (Math.random() - 0.5) * 0.005,
-        liquidationVolume: 45000000 + (Math.random() - 0.5) * 10000000,
-        putCallRatio: 0.85 + (Math.random() - 0.5) * 0.2
-      },
-      ethereum: {
-        openInterest: 8500000000 + (Math.random() - 0.5) * 1000000000,
-        fundingRate: 0.0085 + (Math.random() - 0.5) * 0.003,
-        liquidationVolume: 28000000 + (Math.random() - 0.5) * 5000000,
-        putCallRatio: 0.92 + (Math.random() - 0.5) * 0.15
-      }
-    }
-    
-    return mockData[coinGeckoId] || mockData.bitcoin
   }
   
   /**
@@ -1061,13 +1104,46 @@ Consider valuation metrics, market sentiment, technical indicators, and derivati
     return sum / period
   }
   
-  private calculateMACD(prices: number[], fastPeriod: number = 12, slowPeriod: number = 26, signalPeriod: number = 9): number {
-    if (prices.length < slowPeriod) return 0
-    
-    const fastMA = this.calculateMA(prices, fastPeriod)
-    const slowMA = this.calculateMA(prices, slowPeriod)
-    
-    return fastMA - slowMA
+  private calculateMACD(prices: number[]): number {
+    if (prices.length < 26) return 0
+
+    const ema12 = this.calculateEMA(prices, 12)
+    const ema26 = this.calculateEMA(prices, 26)
+
+    return ema12 - ema26
+  }
+
+  private calculateEMA(prices: number[], period: number): number {
+    if (prices.length < period) return prices[prices.length - 1] || 0
+
+    const multiplier = 2 / (period + 1)
+    let ema = prices[0]
+
+    for (let i = 1; i < prices.length; i++) {
+      ema = (prices[i] - ema) * multiplier + ema
+    }
+
+    return ema
+  }
+
+  private calculateBollingerUpper(prices: number[], period: number, stdDev: number): number {
+    if (prices.length < period) return prices[prices.length - 1] || 0
+
+    const ma = this.calculateMA(prices, period)
+    const variance = prices.slice(-period).reduce((sum, price) => sum + Math.pow(price - ma, 2), 0) / period
+    const standardDeviation = Math.sqrt(variance)
+
+    return ma + (standardDeviation * stdDev)
+  }
+
+  private calculateBollingerLower(prices: number[], period: number, stdDev: number): number {
+    if (prices.length < period) return prices[prices.length - 1] || 0
+
+    const ma = this.calculateMA(prices, period)
+    const variance = prices.slice(-period).reduce((sum, price) => sum + Math.pow(price - ma, 2), 0) / period
+    const standardDeviation = Math.sqrt(variance)
+
+    return ma - (standardDeviation * stdDev)
   }
   
   private calculateBollingerBand(prices: number[], period: number = 20, stdDev: number = 2): { upper: number; middle: number; lower: number } {

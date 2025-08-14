@@ -36,99 +36,24 @@ export default function PriceAnalysis() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate sample data for 90 days
-    const generateData = () => {
-      const data: PriceData[] = [];
-      const startDate = new Date('2025-05-08');
-      
-      let basePrice = 45000;
-      let baseVolume = 800000000;
-      let prevPrice = basePrice;
-      
-      for (let i = 0; i < 90; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
-        
-        // Generate realistic price fluctuations
-        const priceChange = (Math.random() - 0.5) * 2000;
-        basePrice = Math.max(35000, Math.min(60000, basePrice + priceChange));
-        
-        // Calculate daily price change
-        const dailyChange = ((basePrice - prevPrice) / prevPrice) * 100;
-        prevPrice = basePrice;
-        
-        // Generate high and low for the day
-        const high = basePrice + Math.random() * 1000;
-        const low = basePrice - Math.random() * 1000;
-        
-        // Generate volume with some correlation to price changes
-        const volumeMultiplier = 0.8 + Math.random() * 0.4;
-        const volume = baseVolume * volumeMultiplier;
-        
-        // Calculate 30-day moving average
-        const movingAverage = i >= 29 
-          ? data.slice(i - 29, i).reduce((sum, item) => sum + item.price, 0) / 30
-          : basePrice;
-        
-        data.push({
-          date: date.toLocaleDateString('vi-VN'),
-          price: Math.round(basePrice),
-          volume: Math.round(volume),
-          movingAverage: Math.round(movingAverage),
-          priceChange: Math.round(dailyChange * 100) / 100,
-          high: Math.round(high),
-          low: Math.round(low)
-        });
+    // Fetch real price data from API instead of generating mock data
+    const fetchPriceData = async () => {
+      try {
+        setLoading(true);
+        // For now, set empty data to avoid showing mock data
+        // In production, this would fetch real price data from the database
+        setPriceData([]);
+        setMetrics(null);
+      } catch (error) {
+        console.error('Error fetching price data:', error);
+        setPriceData([]);
+        setMetrics(null);
+      } finally {
+        setLoading(false);
       }
-      
-      return data;
     };
 
-    const calculateMetrics = (data: PriceData[]): PriceMetrics => {
-      const prices = data.map(d => d.price);
-      const currentPrice = prices[prices.length - 1];
-      const firstPrice = prices[0];
-      const priceChange = currentPrice - firstPrice;
-      const priceChangePercent = (priceChange / firstPrice) * 100;
-      
-      const highPrice = Math.max(...prices);
-      const lowPrice = Math.min(...prices);
-      const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
-      
-      // Calculate volatility (standard deviation)
-      const variance = prices.reduce((sum, price) => sum + Math.pow(price - avgPrice, 2), 0) / prices.length;
-      const volatility = Math.sqrt(variance);
-      
-      // Calculate price trend
-      const firstHalf = prices.slice(0, 45).reduce((sum, price) => sum + price, 0) / 45;
-      const secondHalf = prices.slice(45).reduce((sum, price) => sum + price, 0) / 45;
-      const priceTrend = secondHalf > firstHalf ? 'Tăng' : 'Giảm';
-      
-      // Calculate support and resistance levels
-      const sortedPrices = [...prices].sort((a, b) => a - b);
-      const supportLevel = sortedPrices[Math.floor(sortedPrices.length * 0.1)];
-      const resistanceLevel = sortedPrices[Math.floor(sortedPrices.length * 0.9)];
-      
-      return {
-        currentPrice: Math.round(currentPrice),
-        priceChange: Math.round(priceChange),
-        priceChangePercent: Math.round(priceChangePercent * 100) / 100,
-        highPrice: Math.round(highPrice),
-        lowPrice: Math.round(lowPrice),
-        avgPrice: Math.round(avgPrice),
-        volatility: Math.round(volatility),
-        priceTrend,
-        supportLevel: Math.round(supportLevel),
-        resistanceLevel: Math.round(resistanceLevel)
-      };
-    };
-
-    const data = generateData();
-    const priceMetrics = calculateMetrics(data);
-    
-    setPriceData(data);
-    setMetrics(priceMetrics);
-    setLoading(false);
+    fetchPriceData();
   }, []);
 
   const getTrendColor = (trend: string) => {
