@@ -1,0 +1,510 @@
+// Crypto Market Analytics Dashboard Database Schema
+// Designed for comprehensive crypto market analysis and trading recommendations
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  portfolio    Portfolio[]
+  alerts       Alert[]
+  watchlist    Watchlist[]
+  analysis     Analysis[]
+  addedCoins   Cryptocurrency[] @relation("AddedCoins")
+  
+  @@map("users")
+}
+
+// Cryptocurrency Information
+model Cryptocurrency {
+  id          String   @id @default(cuid())
+  symbol      String   @unique // BTC, ETH, etc.
+  name        String   // Bitcoin, Ethereum, etc.
+  coinGeckoId String   @unique // bitcoin, ethereum, etc.
+  logo        String?
+  rank        Int?
+  isActive    Boolean  @default(true) // Whether the coin is active for analysis
+  isDefault   Boolean  @default(false) // Whether it's a default coin (BTC, ETH, BNB, SOL)
+  addedBy     String?  // User ID who added this coin (null for default coins)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  priceHistory        PriceHistory[]
+  onChainMetrics      OnChainMetric[]
+  technicalIndicators TechnicalIndicator[]
+  sentimentMetrics    SentimentMetric[]
+  derivativeMetrics  DerivativeMetric[]
+  volumeHistory       VolumeHistory[]
+  watchlist           Watchlist[]
+  portfolio           Portfolio[]
+  alerts              Alert[]
+  analysis            Analysis[]
+  analysisHistory     AnalysisHistory[]
+  dataCollection      CoinDataCollection?
+  tvlMetrics          TVLMetric[]
+  advancedTvlMetrics  AdvancedTVLMetric[]
+  enhancedTvlMetrics  EnhancedTVLMetric[]
+  stakingMetrics      StakingMetric[]
+  addedByUser         User?            @relation("AddedCoins", fields: [addedBy], references: [id])
+  
+  @@map("cryptocurrencies")
+}
+
+// Price History Data
+model PriceHistory {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  price        Float
+  volume24h    Float?
+  marketCap    Float?
+  priceChange24h Float?
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("price_history")
+}
+
+// Volume History Data (for 90-day volume analysis)
+model VolumeHistory {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  dailyVolume  Float    // Daily trading volume
+  price        Float?   // Price at the time of volume
+  exchangeVolume String? // JSON string with volume by exchange
+  volumeChange24h Float? // 24h volume change percentage
+  volumeAvg30d  Float?   // 30-day moving average of volume
+  volumeVsAvg   Float?   // Current volume vs 30-day average (percentage)
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("volume_history")
+}
+
+// On-chain Metrics
+model OnChainMetric {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  
+  // Core On-chain Metrics
+  mvrv         Float?   // Market Value to Realized Value
+  nupl         Float?   // Net Unrealized Profit/Loss
+  sopr         Float?   // Spent Output Profit Ratio
+  activeAddresses Int?   // Number of active addresses
+  newAddresses Int?     // Number of new addresses created
+  exchangeInflow  Float? // Exchange inflow volume
+  exchangeOutflow Float? // Exchange outflow volume
+  transactionVolume Float? // On-chain transaction volume
+  supplyDistribution Json? // Supply distribution data (whale/retail/exchange holdings)
+  whaleHoldingsPercentage Float? // Percentage held by whales
+  retailHoldingsPercentage Float? // Percentage held by retail
+  exchangeHoldingsPercentage Float? // Percentage held by exchanges
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("on_chain_metrics")
+}
+
+// Technical Indicators
+model TechnicalIndicator {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  
+  // Technical Analysis Indicators
+  rsi          Float?   // Relative Strength Index
+  ma50         Float?   // 50-day Moving Average
+  ma200        Float?   // 200-day Moving Average
+  macd         Float?   // MACD line
+  macdSignal   Float?   // MACD signal line
+  bollingerUpper Float? // Bollinger Bands upper
+  bollingerLower Float? // Bollinger Bands lower
+  bollingerMiddle Float? // Bollinger Bands middle
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("technical_indicators")
+}
+
+// Market Sentiment Metrics
+model SentimentMetric {
+  id           String   @id @default(cuid())
+  timestamp    DateTime
+  
+  // Sentiment Indicators
+  fearGreedIndex    Float? // Fear & Greed Index (0-100)
+  socialSentiment   Float? // Social media sentiment score
+  googleTrends      Float? // Google trends score
+  newsSentiment     Float? // News sentiment score
+  
+  // Relations
+  cryptocurrencies Cryptocurrency[]
+  
+  @@unique([timestamp])
+  @@map("sentiment_metrics")
+}
+
+// Derivative Metrics
+model DerivativeMetric {
+  id           String   @id @default(cuid())
+  cryptoId     String
+  timestamp    DateTime
+  
+  // Derivatives Market Data
+  openInterest   Float? // Total open interest
+  fundingRate    Float? // Funding rate
+  liquidationVolume Float? // Liquidation volume
+  putCallRatio   Float? // Put/Call ratio
+  
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@map("derivative_metrics")
+}
+
+// User Portfolio
+model Portfolio {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String
+  amount       Float
+  avgBuyPrice  Float
+  currentValue Float?
+  profitLoss   Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, cryptoId])
+  @@map("portfolios")
+}
+
+// User Watchlist
+model Watchlist {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String
+  createdAt    DateTime @default(now())
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, cryptoId])
+  @@map("watchlists")
+}
+
+// Alert System
+model Alert {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String?
+  type         AlertType
+  condition    String   // JSON string for complex conditions
+  isActive     Boolean  @default(true)
+  triggered    Boolean  @default(false)
+  triggeredAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency? @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@map("alerts")
+}
+
+// AI Analysis and Recommendations
+model Analysis {
+  id           String   @id @default(cuid())
+  userId       String
+  cryptoId     String?
+  type         AnalysisType
+  signal       SignalType // BUY, SELL, HOLD
+  confidence   Float    // 0-1 confidence score
+  reasoning    String   // AI reasoning for the recommendation
+  metricsData  Json?   // JSON string with metrics used for analysis
+  timestamp    DateTime @default(now())
+  
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crypto       Cryptocurrency? @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@map("analysis")
+}
+
+// AI Analysis History (for automated analysis)
+model AnalysisHistory {
+  id          String   @id @default(cuid())
+  cryptoId    String
+  coinId      String   // CoinGecko ID for easier lookup
+  signal      String   // BUY, SELL, HOLD, STRONG_BUY, STRONG_SELL, MUA, BÁN, GIỮ, MUA MẠNH, BÁN MẠNH
+  confidence  Float    // 0-100 confidence score
+  reasoning   String   // AI reasoning for the recommendation
+  riskLevel   String   // LOW, MEDIUM, HIGH
+  aiModel     String   // AI model used for analysis
+  analysisType String? // Type of analysis (AI_ENHANCED, TECHNICAL, ON_CHAIN, etc.)
+  analysisData Json?   // JSON string with complete analysis data
+  metricsData Json?   // JSON string with metrics used for analysis (legacy)
+  timestamp   DateTime @default(now())
+  
+  crypto      Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@index([cryptoId, timestamp])
+  @@index([coinId, timestamp])
+  @@index([analysisType, timestamp])
+  @@map("analysis_history")
+}
+
+// Coin Data Collection Status
+model CoinDataCollection {
+  id          String   @id @default(cuid())
+  cryptoId    String   @unique
+  status      CollectionStatus @default(PENDING)
+  lastCollected DateTime?
+  nextCollection DateTime?
+  errorCount  Int      @default(0)
+  lastError   String?
+  metadata    Json?  // JSON string with collection metadata
+  
+  crypto      Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@map("coin_data_collection")
+}
+
+// TVL Metrics (specific TVL data for blockchain analysis)
+model TVLMetric {
+  id                     String   @id @default(cuid())
+  cryptoId               String
+  timestamp              DateTime @default(now())
+  
+  // Core TVL Metrics
+  totalTVL               Float?   // Total TVL for the blockchain
+  chainTVL               Float?   // TVL specific to this blockchain
+  tvlChange24h           Float?   // 24h TVL change percentage
+  tvlChange7d            Float?   // 7d TVL change percentage
+  tvlChange30d           Float?   // 30d TVL change percentage
+  dominance              Float?   // TVL dominance percentage
+  marketCapTVLRatio      Float?   // Market Cap to TVL ratio
+  
+  // Protocol Distribution
+  defiProtocols          String?  // JSON string with top DeFi protocols
+  protocolDistribution   String?  // JSON string with protocol categories distribution
+  topChainsByTVL         String?  // JSON string with top chains by TVL
+  
+  // Historical Data
+  tvlHistory             String?  // JSON string with historical TVL data
+  dominanceHistory       String?  // JSON string with historical dominance data
+  
+  // Metadata
+  dataSources            String?  // JSON string with data sources information
+  lastUpdated            DateTime @default(now())
+  confidence             Float?   // Data confidence score 0-1
+  
+  crypto                 Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@index([cryptoId])
+  @@index([timestamp])
+  @@map("tvl_metrics")
+}
+
+// Advanced TVL Metrics (TVL Velocity and Efficiency)
+model AdvancedTVLMetric {
+  id                     String   @id @default(cuid())
+  cryptoId               String
+  timestamp              DateTime @default(now())
+  
+  // TVL Velocity Metrics
+  tvlVelocity            Float?   // TVL velocity ratio
+  volumeToTVLRatio       Float?   // Volume to TVL ratio
+  turnoverRate           Float?   // TVL turnover rate percentage
+  avgHoldingPeriod       Float?   // Average holding period in days
+  liquidityEfficiency    Float?   // Liquidity efficiency score 0-100
+  
+  // TVL Efficiency Metrics
+  feeToTVLRatio          Float?   // Fees to TVL ratio percentage
+  revenueToTVLRatio      Float?   // Revenue to TVL ratio percentage
+  roi                    Float?   // Return on Investment percentage
+  capitalEfficiency      Float?   // Capital efficiency score 0-100
+  protocolYield         Float?   // Protocol yield percentage
+  economicOutput         Float?   // Economic output in USD
+  
+  // Combined Metrics
+  combinedScore          Float?   // Combined score 0-100
+  marketHealth           String?  // Market health: excellent, good, fair, poor
+  recommendations         String?  // JSON string with recommendations
+  
+  // Metadata
+  confidence             Float?   // Data confidence score 0-1
+  lastUpdated            DateTime @default(now())
+  
+  crypto                 Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@index([cryptoId])
+  @@index([timestamp])
+  @@map("advanced_tvl_metrics")
+}
+
+// Staking Metrics (for Proof-of-Stake blockchains)
+model StakingMetric {
+  id                     String   @id @default(cuid())
+  cryptoId               String
+  timestamp              DateTime @default(now())
+  
+  // Core Staking Metrics
+  totalStaked            Float?   // Total amount staked
+  stakingRate            Float?   // Percentage of supply staked
+  stakingAPR             Float?   // Annual Percentage Rate
+  stakingAPY             Float?   // Annual Percentage Yield
+  rewards24h             Float?   // Rewards distributed in 24h
+  
+  // Validator Information
+  totalValidators        Int?     // Total number of validators
+  activeValidators       Int?     // Active validators
+  validatorRewards       Float?   // Total validator rewards
+  minimumStake           Float?   // Minimum stake requirement
+  averageStake           Float?   // Average stake per validator
+  
+  // Staking Distribution
+  stakingDistribution    String?  // JSON string with staking distribution
+  exchangeStaking        Float?   // Percentage staked on exchanges
+  institutionalStaking   Float?   // Percentage staked by institutions
+  retailStaking          Float?   // Percentage staked by retail
+  
+  // Historical Data
+  stakingHistory         String?  // JSON string with historical staking data
+  aprHistory             String?  // JSON string with historical APR data
+  
+  // Metadata
+  lastUpdated            DateTime @default(now())
+  confidence             Float?   // Data confidence score 0-1
+  
+  crypto                 Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@index([cryptoId])
+  @@index([timestamp])
+  @@map("staking_metrics")
+}
+
+// Enhanced TVL Metrics (Concentration Risk and Sustainability)
+model EnhancedTVLMetric {
+  id                     String   @id @default(cuid())
+  cryptoId               String
+  timestamp              DateTime @default(now())
+  
+  // TVL Concentration Risk Metrics
+  concentrationRisk       Float?   // Concentration risk score 0-100 (higher = more risk)
+  herfindahlIndex        Float?   // Herfindahl-Hirschman Index for concentration
+  topProtocolDominance   Float?   // Percentage of TVL in top protocol
+  top3ProtocolDominance  Float?   // Percentage of TVL in top 3 protocols
+  top5ProtocolDominance  Float?   // Percentage of TVL in top 5 protocols
+  protocolDiversity      Float?   // Protocol diversity score 0-100 (higher = more diverse)
+  concentrationLevel     String?  // LOW, MEDIUM, HIGH, CRITICAL
+  concentrationTrend     String?  // IMPROVING, STABLE, DETERIORATING
+  
+  // TVL Sustainability Metrics
+  sustainabilityScore    Float?   // Sustainability score 0-100 (higher = more sustainable)
+  revenueStability       Float?   // Revenue stability score 0-100
+  userGrowthRate         Float?   // User growth rate percentage
+  protocolHealth         Float?   // Average protocol health score
+  ecosystemMaturity      Float?   // Ecosystem maturity score 0-100
+  riskAdjustedReturns    Float?   // Risk-adjusted returns score
+  sustainabilityLevel    String?  // EXCELLENT, GOOD, FAIR, POOR
+  sustainabilityTrend    String?  // IMPROVING, STABLE, DECLINING
+  
+  // Combined Analysis
+  overallTVLHealth       Float?   // Overall TVL health score 0-100
+  recommendations        String?  // JSON string with recommendations
+  riskFactors            String?  // JSON string with identified risk factors
+  strengthFactors        String?  // JSON string with identified strength factors
+  
+  // Metadata
+  confidence             Float?   // Data confidence score 0-1
+  lastUpdated            DateTime @default(now())
+  
+  crypto                 Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@index([cryptoId])
+  @@index([timestamp])
+  @@map("enhanced_tvl_metrics")
+}
+
+// DeFi Metrics (from DeFiLlama integration)
+model DeFiMetric {
+  id                       String   @id @default(cuid())
+  timestamp                DateTime @default(now())
+  
+  // Total DeFi Metrics
+  totalTVL                 Float?   // Total Value Locked across all chains
+  totalStablecoinMarketCap Float?   // Total stablecoin market cap
+  totalDEXVolume24h        Float?   // Total DEX volume in 24h
+  totalProtocolFees24h     Float?   // Total protocol fees in 24h
+  avgYieldRate             Float?   // Average yield rate across DeFi
+  totalBridgeVolume24h     Float?   // Total bridge volume in 24h
+  
+  // Top Chains by TVL (JSON array)
+  topChains                String?  // JSON string with top 5 chains by TVL
+  topProtocols             String?  // JSON string with top 5 protocols by TVL
+  topStablecoins           String?  // JSON string with top 5 stablecoins by market cap
+  
+  // Token-specific data (JSON array)
+  tokenData                String?  // JSON string with token-specific DeFi data
+  
+  @@map("defi_metrics")
+}
+
+// Enums
+enum AlertType {
+  PRICE_ALERT
+  METRIC_ALERT
+  TECHNICAL_ALERT
+  SENTIMENT_ALERT
+  DERIVATIVE_ALERT
+}
+
+enum AnalysisType {
+  MARKET_OVERVIEW
+  COIN_SPECIFIC
+  PORTFOLIO_ANALYSIS
+  RISK_ASSESSMENT
+}
+
+enum SignalType {
+  BUY
+  SELL
+  HOLD
+  STRONG_BUY
+  STRONG_SELL
+}
+
+enum CollectionStatus {
+  PENDING
+  COLLECTING
+  COMPLETED
+  FAILED
+  RETRYING
+}

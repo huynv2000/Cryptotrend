@@ -1,0 +1,913 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useResolutionContext } from '@/contexts/ResolutionContext';
+import { useDataWithNA, formatValueWithNA, isValidValue } from '@/hooks/useDataWithNA';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import { NAValue, NACard } from '@/components/NAValue';
+import { LoadingState } from '@/components/LoadingState';
+import DebugTab from '@/components/DebugTab';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Plus, RefreshCw, TrendingUp, TrendingDown, Minus, Bot, BarChart3, AlertTriangle, Bell, Settings } from 'lucide-react';
+
+interface MarketMetrics {
+  currentPrice: number;
+  priceChange: number;
+  volume24h: number;
+  marketCap: number;
+  fearGreedIndex: number;
+  rsi: number;
+  macd: number;
+  ma50: number;
+  ma200: number;
+}
+
+interface OnChainMetrics {
+  mvrv: number;
+  nupl: number;
+  sopr: number;
+  activeAddresses: number;
+  exchangeFlow: number;
+}
+
+interface TechnicalDetails {
+  bollingerPosition: string;
+  volume: number;
+  exchangeFlow: number;
+}
+
+interface SocialSentiment {
+  twitter: number;
+  reddit: number;
+  news: number;
+  googleTrends: number;
+}
+
+interface TradingSignal {
+  signal: 'BUY' | 'SELL' | 'HOLD';
+  confidence: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  entryPoint: string;
+  stopLoss: string;
+  takeProfit: string;
+}
+
+interface Alert {
+  id: string;
+  type: 'WARNING' | 'INFO' | 'NEW';
+  title: string;
+  message: string;
+}
+
+interface NewsItem {
+  id: string;
+  title: string;
+}
+
+interface DashboardData {
+  cryptocurrency: any;
+  price: any;
+  onChain: any;
+  technical: any;
+  sentiment: any;
+  derivatives: any;
+  defi: any;
+}
+
+export default function Home() {
+  const { getFontSizeClass, getPaddingClass, getGapClass, config, resolution } = useResolutionContext();
+  const [selectedCoin, setSelectedCoin] = useState('bitcoin');
+  const [availableCoins, setAvailableCoins] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<MarketMetrics | null>(null);
+  const [onChainMetrics, setOnChainMetrics] = useState<OnChainMetrics | null>(null);
+  const [technicalDetails, setTechnicalDetails] = useState<TechnicalDetails | null>(null);
+  const [socialSentiment, setSocialSentiment] = useState<SocialSentiment | null>(null);
+  const [tradingSignal, setTradingSignal] = useState<TradingSignal | null>(null);
+  const [defiMetrics, setDefiMetrics] = useState<any>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newCoinSymbol, setNewCoinSymbol] = useState('');
+  const [newCoinName, setNewCoinName] = useState('');
+  const [newCoinId, setNewCoinId] = useState('');
+  const [dataErrors, setDataErrors] = useState<{[key: string]: boolean}>({});
+
+  useEffect(() => {
+    fetchAvailableCoins();
+    fetchAllData();
+  }, [selectedCoin]);
+
+  const fetchAvailableCoins = async () => {
+    try {
+      const response = await fetch('/api/cryptocurrencies?activeOnly=true');
+      if (response.ok) {
+        const coins = await response.json();
+        setAvailableCoins(coins);
+      }
+    } catch (error) {
+      console.error('Error fetching available coins:', error);
+      setAvailableCoins([
+        { coinGeckoId: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
+        { coinGeckoId: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
+        { coinGeckoId: 'binancecoin', symbol: 'BNB', name: 'BNB' },
+        { coinGeckoId: 'solana', symbol: 'SOL', name: 'Solana' }
+      ]);
+    }
+  };
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      setDataErrors({});
+      
+      // Fetch dashboard data
+      const dashboardResponse = await fetch(`/api/dashboard?coinId=${selectedCoin}`);
+      let dashboardData: DashboardData;
+      
+      if (dashboardResponse.ok) {
+        dashboardData = await dashboardResponse.json();
+      } else {
+        dashboardData = {} as DashboardData;
+        setDataErrors(prev => ({ ...prev, dashboard: true }));
+      }
+      
+      // Fetch trading signals
+      const signalResponse = await fetch(`/api/trading-signals-fast?action=signal&coinId=${selectedCoin}`);
+      let signalData;
+      
+      if (signalResponse.ok) {
+        signalData = await signalResponse.json();
+      } else {
+        signalData = { signal: null };
+        setDataErrors(prev => ({ ...prev, signals: true }));
+      }
+      
+      // Fetch alerts
+      const alertsResponse = await fetch(`/api/alerts-fast?action=process-data&coinId=${selectedCoin}`);
+      let alertsData;
+      
+      if (alertsResponse.ok) {
+        alertsData = await alertsResponse.json();
+      } else {
+        alertsData = { alerts: [] };
+        setDataErrors(prev => ({ ...prev, alerts: true }));
+      }
+      
+      // Process data với validation
+      const processedMetrics: MarketMetrics = {
+        currentPrice: isValidValue(dashboardData.price?.usd) ? dashboardData.price.usd : null,
+        priceChange: isValidValue(dashboardData.price?.usd_24h_change) ? dashboardData.price.usd_24h_change : null,
+        volume24h: isValidValue(dashboardData.price?.usd_24h_vol) ? dashboardData.price.usd_24h_vol : null,
+        marketCap: isValidValue(dashboardData.price?.usd_market_cap) ? dashboardData.price.usd_market_cap : null,
+        fearGreedIndex: isValidValue(dashboardData.sentiment?.fearGreedIndex) ? dashboardData.sentiment.fearGreedIndex : null,
+        rsi: isValidValue(dashboardData.technical?.rsi) ? dashboardData.technical.rsi : null,
+        macd: isValidValue(dashboardData.technical?.macd) ? dashboardData.technical.macd : null,
+        ma50: isValidValue(dashboardData.technical?.ma50) ? dashboardData.technical.ma50 : null,
+        ma200: isValidValue(dashboardData.technical?.ma200) ? dashboardData.technical.ma200 : null
+      };
+      
+      const processedOnChain: OnChainMetrics = {
+        mvrv: isValidValue(dashboardData.onChain?.mvrv) ? dashboardData.onChain.mvrv : null,
+        nupl: isValidValue(dashboardData.onChain?.nupl) ? dashboardData.onChain.nupl : null,
+        sopr: isValidValue(dashboardData.onChain?.sopr) ? dashboardData.onChain.sopr : null,
+        activeAddresses: isValidValue(dashboardData.onChain?.activeAddresses) ? dashboardData.onChain.activeAddresses : null,
+        exchangeFlow: isValidValue(dashboardData.onChain?.exchangeInflow) && isValidValue(dashboardData.onChain?.exchangeOutflow) 
+          ? (dashboardData.onChain.exchangeInflow || 0) - (dashboardData.onChain.exchangeOutflow || 0) 
+          : null
+      };
+      
+      const processedTechnical: TechnicalDetails = {
+        bollingerPosition: 'Middle',
+        volume: isValidValue(dashboardData.price?.usd_24h_vol) ? dashboardData.price.usd_24h_vol : null,
+        exchangeFlow: isValidValue(dashboardData.onChain?.exchangeInflow) && isValidValue(dashboardData.onChain?.exchangeOutflow) 
+          ? (dashboardData.onChain.exchangeInflow || 0) - (dashboardData.onChain.exchangeOutflow || 0) 
+          : null
+      };
+      
+      const processedSocial: SocialSentiment = {
+        twitter: isValidValue(dashboardData.sentiment?.social?.twitterSentiment) ? dashboardData.sentiment.social.twitterSentiment : null,
+        reddit: isValidValue(dashboardData.sentiment?.social?.redditSentiment) ? dashboardData.sentiment.social.redditSentiment : null,
+        news: isValidValue(dashboardData.sentiment?.news?.newsSentiment) ? dashboardData.sentiment.news.newsSentiment : null,
+        googleTrends: isValidValue(dashboardData.sentiment?.googleTrends?.trendsScore) ? dashboardData.sentiment.googleTrends.trendsScore : null
+      };
+      
+      const processedSignal: TradingSignal = {
+        signal: isValidValue(signalData.signal?.signal) ? signalData.signal.signal : null,
+        confidence: isValidValue(signalData.signal?.confidence) ? signalData.signal.confidence : null,
+        riskLevel: isValidValue(signalData.signal?.riskLevel) ? signalData.signal.riskLevel : null,
+        entryPoint: isValidValue(signalData.signal?.entryPoint) ? signalData.signal.entryPoint : null,
+        stopLoss: isValidValue(signalData.signal?.stopLoss) ? signalData.signal.stopLoss : null,
+        takeProfit: isValidValue(signalData.signal?.takeProfit) ? signalData.signal.takeProfit : null
+      };
+      
+      const processedAlerts: Alert[] = isValidValue(alertsData.alerts) && Array.isArray(alertsData.alerts) 
+        ? alertsData.alerts.slice(0, 5) 
+        : [];
+      
+      const processedNews: NewsItem[] = []; // No mock news data - real data only
+      
+      // Process DeFi metrics
+      const processedDefiMetrics = {
+        totalTVL: isValidValue(dashboardData.defi?.totalTVL) ? dashboardData.defi.totalTVL : null,
+        totalStablecoinMarketCap: isValidValue(dashboardData.defi?.totalStablecoinMarketCap) ? dashboardData.defi.totalStablecoinMarketCap : null,
+        totalDEXVolume24h: isValidValue(dashboardData.defi?.totalDEXVolume24h) ? dashboardData.defi.totalDEXVolume24h : null,
+        totalProtocolFees24h: isValidValue(dashboardData.defi?.totalProtocolFees24h) ? dashboardData.defi.totalProtocolFees24h : null,
+        avgYieldRate: isValidValue(dashboardData.defi?.avgYieldRate) ? dashboardData.defi.avgYieldRate : null,
+        totalBridgeVolume24h: isValidValue(dashboardData.defi?.totalBridgeVolume24h) ? dashboardData.defi.totalBridgeVolume24h : null,
+        topChains: dashboardData.defi?.topChains || [],
+        topProtocols: dashboardData.defi?.topProtocols || [],
+        topStablecoins: dashboardData.defi?.topStablecoins || []
+      };
+      
+      setMetrics(processedMetrics);
+      setOnChainMetrics(processedOnChain);
+      setTechnicalDetails(processedTechnical);
+      setSocialSentiment(processedSocial);
+      setTradingSignal(processedSignal);
+      setDefiMetrics(processedDefiMetrics);
+      setAlerts(processedAlerts);
+      setNews(processedNews);
+      
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Set fallback data với tất cả giá trị là null để hiển thị N/A
+      setFallbackData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setFallbackData = () => {
+    setMetrics({
+      currentPrice: null,
+      priceChange: null,
+      volume24h: null,
+      marketCap: null,
+      fearGreedIndex: null,
+      rsi: null,
+      macd: null,
+      ma50: null,
+      ma200: null
+    });
+    
+    setOnChainMetrics({
+      mvrv: null,
+      nupl: null,
+      sopr: null,
+      activeAddresses: null,
+      exchangeFlow: null
+    });
+    
+    setTechnicalDetails({
+      bollingerPosition: 'Middle',
+      volume: null,
+      exchangeFlow: null
+    });
+    
+    setSocialSentiment({
+      twitter: null,
+      reddit: null,
+      news: null,
+      googleTrends: null
+    });
+    
+    setTradingSignal({
+      signal: null,
+      confidence: null,
+      riskLevel: null,
+      entryPoint: null,
+      stopLoss: null,
+      takeProfit: null
+    });
+    
+    setAlerts([]);
+    setNews([]); // No mock news data in fallback
+    
+    // Set fallback DeFi metrics
+    setDefiMetrics({
+      totalTVL: null,
+      totalStablecoinMarketCap: null,
+      totalDEXVolume24h: null,
+      totalProtocolFees24h: null,
+      avgYieldRate: null,
+      totalBridgeVolume24h: null,
+      topChains: [],
+      topProtocols: [],
+      topStablecoins: []
+    });
+  };
+
+  const formatCurrency = (value: number | null) => {
+    if (!isValidValue(value)) return 'N/A';
+    const numValue = value as number;
+    if (numValue >= 1e9) return `$${(numValue / 1e9).toFixed(2)}T`;
+    if (numValue >= 1e6) return `$${(numValue / 1e6).toFixed(2)}M`;
+    if (numValue >= 1e3) return `$${(numValue / 1e3).toFixed(2)}K`;
+    return `$${numValue.toFixed(2)}`;
+  };
+
+  const formatNumber = (value: number | null) => {
+    if (!isValidValue(value)) return 'N/A';
+    const numValue = value as number;
+    if (numValue >= 1e9) return `${(numValue / 1e9).toFixed(2)}B`;
+    if (numValue >= 1e6) return `${(numValue / 1e6).toFixed(2)}M`;
+    if (numValue >= 1e3) return `${(numValue / 1e3).toFixed(2)}K`;
+    return numValue.toString();
+  };
+
+  const getSignalColor = (signal: string | null) => {
+    if (!signal) return 'text-gray-600 bg-gray-100';
+    switch (signal) {
+      case 'BUY': return 'text-green-600 bg-green-50';
+      case 'SELL': return 'text-red-600 bg-red-50';
+      case 'HOLD': return 'text-yellow-600 bg-yellow-50';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getSignalIcon = (signal: string | null) => {
+    if (!signal) return '⚪';
+    switch (signal) {
+      case 'BUY': return '🟢';
+      case 'SELL': return '🔴';
+      case 'HOLD': return '🟡';
+      default: return '⚪';
+    }
+  };
+
+  const getRSIColor = (rsi: number | null) => {
+    if (!isValidValue(rsi)) return 'text-gray-600 bg-gray-100';
+    const rsiValue = rsi as number;
+    if (rsiValue > 70) return 'text-red-600 bg-red-50';
+    if (rsiValue < 30) return 'text-green-600 bg-green-50';
+    return 'text-yellow-600 bg-yellow-50';
+  };
+
+  const getMACDTrend = (macd: number | null) => {
+    if (!isValidValue(macd)) return 'N/A';
+    return macd! > 0 ? '📈 BULL' : '📉 BEAR';
+  };
+
+  const getMAStatus = (ma50: number | null, ma200: number | null) => {
+    if (!isValidValue(ma50) || !isValidValue(ma200)) return 'N/A';
+    return ma50! > ma200! ? 'Golden X 📈' : 'Death X 📉';
+  };
+
+  const getSentimentColor = (value: number | null) => {
+    if (!isValidValue(value)) return 'text-gray-600';
+    const numValue = value as number;
+    if (numValue > 0.6) return 'text-green-600';
+    if (numValue < 0.4) return 'text-red-600';
+    return 'text-yellow-600';
+  };
+
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case 'WARNING': return '⚠️';
+      case 'INFO': return '📢';
+      case 'NEW': return '🔔';
+      default: return '📌';
+    }
+  };
+
+  const handleAddCoin = async () => {
+    if (!newCoinSymbol || !newCoinName || !newCoinId) return;
+    
+    try {
+      const response = await fetch('/api/cryptocurrencies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          symbol: newCoinSymbol.toUpperCase(),
+          name: newCoinName,
+          coinGeckoId: newCoinId.toLowerCase()
+        })
+      });
+      
+      if (response.ok) {
+        await fetchAvailableCoins();
+        setIsAddModalOpen(false);
+        setNewCoinSymbol('');
+        setNewCoinName('');
+        setNewCoinId('');
+      } else {
+        alert('Failed to add coin');
+      }
+    } catch (error) {
+      console.error('Error adding coin:', error);
+      alert('Failed to add coin');
+    }
+  };
+
+  const getSelectedCoinName = () => {
+    const coin = availableCoins.find(c => c.coinGeckoId === selectedCoin);
+    return coin ? `${coin.symbol} ${coin.name}` : 'Bitcoin';
+  };
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`flex justify-between items-center h-${config.headerHeight}`}>
+            <div className="flex items-center space-x-4">
+              <h1 className={`${getFontSizeClass('xl')} font-bold text-gray-900`}>
+                Crypto Analytics Dashboard Pro
+                {resolution.width >= 1920 && (
+                  <span className={`${getFontSizeClass('xs')} text-gray-500 ml-2`}>
+                    ({resolution.width}×{resolution.height})
+                  </span>
+                )}
+              </h1>
+              <select
+                value={selectedCoin}
+                onChange={(e) => setSelectedCoin(e.target.value)}
+                className={`px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${getFontSizeClass('base')}`}
+              >
+                {availableCoins.map((coin) => (
+                  <option key={coin.coinGeckoId} value={coin.coinGeckoId}>
+                    {coin.symbol} {coin.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={fetchAllData}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button
+                onClick={() => setIsAddModalOpen(true)}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Coin
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${getGapClass()} space-y-6`}>
+        {/* Tabs */}
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="debug">Debug</TabsTrigger>
+          </TabsList>
+          
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Market Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className={`${getFontSizeClass('lg')} font-semibold`}>Market Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`grid grid-cols-${config.marketOverviewCols} ${getGapClass()}`}>
+                  <NACard 
+                    title="Price"
+                    value={metrics?.currentPrice}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="💰"
+                  />
+                  
+                  <NACard 
+                    title="Market Cap"
+                    value={metrics?.marketCap}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="📊"
+                  />
+                  
+                  <NACard 
+                    title="Volume 24h"
+                    value={metrics?.volume24h}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="📈"
+                  />
+                  
+                  <NACard 
+                    title="Fear/Greed"
+                    value={metrics?.fearGreedIndex}
+                    formatter={(v) => v.toString()}
+                    icon="😊"
+                  />
+                  
+                  <NACard 
+                    title="RSI"
+                    value={metrics?.rsi}
+                    formatter={(v) => v.toFixed(1)}
+                    icon="📊"
+                    subtitle="NORMAL"
+                  />
+                  
+                  <NACard 
+                    title="MACD"
+                    value={metrics?.macd}
+                    formatter={(v) => v.toFixed(1)}
+                    icon="📉"
+                    subtitle={getMACDTrend(metrics?.macd)}
+                  />
+                  
+                  <NACard 
+                    title="MA50/200"
+                    value={metrics?.ma50 && metrics?.ma200 ? (metrics.ma50 > metrics.ma200 ? 1 : 0) : null}
+                    formatter={(v) => v === 1 ? 'Golden X 📈' : 'Death X 📉'}
+                    icon="📈"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* DeFi Metrics (Token-specific) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className={`${getFontSizeClass('lg')} font-semibold`}>DeFi Metrics ({getSelectedCoinName()})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`grid grid-cols-${config.defiMetricsCols || 3} ${getGapClass()}`}>
+                  <NACard 
+                    title="Token TVL"
+                    value={defiMetrics?.token?.tvl}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="🏦"
+                    subtitle={defiMetrics?.token?.chainName || 'Chain TVL'}
+                  />
+                  
+                  <NACard 
+                    title="Market TVL"
+                    value={defiMetrics?.totalTVL}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="🌍"
+                    subtitle="Total Market"
+                  />
+                  
+                  <NACard 
+                    title="DEX Volume 24h"
+                    value={defiMetrics?.totalDEXVolume24h}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="🔄"
+                    subtitle="Decentralized Exchange"
+                  />
+                  
+                  <NACard 
+                    title="Protocol Fees 24h"
+                    value={defiMetrics?.totalProtocolFees24h}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="💰"
+                    subtitle="Daily Fees"
+                  />
+                  
+                  <NACard 
+                    title="Avg Yield Rate"
+                    value={defiMetrics?.avgYieldRate}
+                    formatter={(v) => `${v.toFixed(2)}%`}
+                    icon="📈"
+                    subtitle="DeFi Yields"
+                  />
+                  
+                  <NACard 
+                    title="Bridge Volume 24h"
+                    value={defiMetrics?.totalBridgeVolume24h}
+                    formatter={(v) => formatCurrency(v)}
+                    icon="🌉"
+                    subtitle="Cross-chain"
+                  />
+                </div>
+                
+                {/* Token-specific Protocols and Related Chains */}
+                <div className={`grid grid-cols-2 ${getGapClass()} mt-6`}>
+                  {/* Token-specific Protocols */}
+                  <div>
+                    <h4 className={`${getFontSizeClass('base')} font-semibold mb-3`}>
+                      Top Protocols for {getSelectedCoinName().split(' ')[0]}
+                    </h4>
+                    <div className="space-y-2">
+                      {defiMetrics?.token?.protocols?.slice(0, 5).map((protocol: any, index: number) => (
+                        <div key={protocol.slug || index} className="flex justify-between items-center text-sm">
+                          <span className="font-medium">{index + 1}. {protocol.name}</span>
+                          <span className="text-green-600">{formatCurrency(protocol.tvl)}</span>
+                        </div>
+                      )) || (
+                        <div className={`${getFontSizeClass('sm')} text-gray-500 text-center py-2`}>
+                          No protocol data available for this token
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Top Related Chains */}
+                  <div>
+                    <h4 className={`${getFontSizeClass('base')} font-semibold mb-3`}>Top Related Chains</h4>
+                    <div className="space-y-2">
+                      {defiMetrics?.topChains?.slice(0, 5).map((chain: any, index: number) => (
+                        <div key={chain.gecko_id || index} className="flex justify-between items-center text-sm">
+                          <span className="font-medium">{index + 1}. {chain.name || chain.tokenSymbol || chain.gecko_id}</span>
+                          <span className="text-green-600">{formatCurrency(chain.tvl)}</span>
+                        </div>
+                      )) || (
+                        <div className={`${getFontSizeClass('sm')} text-gray-500 text-center py-2`}>
+                          No chain data available
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Trading Signals and Technical Details */}
+            <div className={`grid grid-cols-2 ${getGapClass()}`}>
+              {/* Trading Signals */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className={`${getFontSizeClass('lg')} font-semibold`}>Trading Signals</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className={`text-center p-4 rounded-lg ${getSignalColor(tradingSignal?.signal)}`}>
+                      <div className={`${getFontSizeClass('2xl')} font-bold mb-2`}>
+                        {getSignalIcon(tradingSignal?.signal)} {formatValueWithNA(tradingSignal?.signal)}
+                      </div>
+                      <div className={`${getFontSizeClass('sm')}`}>Confidence: {formatValueWithNA(tradingSignal?.confidence, (v) => `${v}%`)}</div>
+                      <div className={`${getFontSizeClass('sm')}`}>Risk Level: {formatValueWithNA(tradingSignal?.riskLevel)}</div>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div><strong>Entry:</strong> {formatValueWithNA(tradingSignal?.entryPoint)}</div>
+                      <div><strong>Stop Loss:</strong> {formatValueWithNA(tradingSignal?.stopLoss)}</div>
+                      <div><strong>Take Profit:</strong> {formatValueWithNA(tradingSignal?.takeProfit)}</div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Bot className="h-4 w-4 mr-2" />
+                        AI Analysis
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Price Chart
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Technical Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className={`${getFontSizeClass('lg')} font-semibold`}>Technical Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>Bollinger</div>
+                        <div className={`${getFontSizeClass('lg')} font-bold`}>➡️</div>
+                        <div className={`${getFontSizeClass('xs')}`}>{formatValueWithNA(technicalDetails?.bollingerPosition)}</div>
+                      </div>
+                      <div>
+                        <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>Volume</div>
+                        <div className={`${getFontSizeClass('lg')} font-bold`}>📊</div>
+                        <div className={`${getFontSizeClass('xs')}`}>{formatCurrency(technicalDetails?.volume)}</div>
+                      </div>
+                      <div>
+                        <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>Exchange Flow</div>
+                        <div className={`${getFontSizeClass('lg')} font-bold`}>
+                          {isValidValue(technicalDetails?.exchangeFlow) && technicalDetails.exchangeFlow! > 0 ? '💰' : '💸'}
+                        </div>
+                        <div className={`${getFontSizeClass('xs')}`}>
+                          {isValidValue(technicalDetails?.exchangeFlow) 
+                            ? `Net ${technicalDetails.exchangeFlow! > 0 ? '+' : ''}${technicalDetails.exchangeFlow}` 
+                            : 'N/A'
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* On-chain Indicators */}
+                    <div>
+                      <h4 className={`font-medium mb-2 ${getFontSizeClass('base')}`}>On-chain Indicators ({getSelectedCoinName()})</h4>
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>MVRV</div>
+                          <div className={`${getFontSizeClass('lg')} font-bold text-green-600`}>
+                            {formatValueWithNA(onChainMetrics?.mvrv, (v) => v.toFixed(2))}
+                          </div>
+                          <div className={`${getFontSizeClass('xs')}`}>🟢 FAIR</div>
+                        </div>
+                        <div>
+                          <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>NUPL</div>
+                          <div className={`${getFontSizeClass('lg')} font-bold text-yellow-600`}>
+                            {formatValueWithNA(onChainMetrics?.nupl, (v) => v.toFixed(2))}
+                          </div>
+                          <div className={`${getFontSizeClass('xs')}`}>🟡 HOPE</div>
+                        </div>
+                        <div>
+                          <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>SOPR</div>
+                          <div className={`${getFontSizeClass('lg')} font-bold text-green-600`}>
+                            {formatValueWithNA(onChainMetrics?.sopr, (v) => v.toFixed(2))}
+                          </div>
+                          <div className={`${getFontSizeClass('xs')}`}>🟢 PROFIT</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Active Addresses */}
+                    <Card className="bg-green-50 border-green-200">
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <div className={`${getFontSizeClass('sm')} text-green-600 mb-1`}>Active Addresses ({getSelectedCoinName()})</div>
+                          <div className={`${getFontSizeClass('2xl')} font-bold text-green-800`}>
+                            {formatNumber(onChainMetrics?.activeAddresses)}
+                          </div>
+                          <div className={`${getFontSizeClass('sm')} text-green-600`}>👥 Network Activity</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Social Sentiment and News */}
+            <div className={`grid grid-cols-2 ${getGapClass()}`}>
+              {/* Social Sentiment */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className={`${getFontSizeClass('lg')} font-semibold`}>Social Sentiment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-4 gap-4 text-center">
+                    <div>
+                      <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>Twitter</div>
+                      <div className={`${getFontSizeClass('lg')} font-bold ${getSentimentColor(socialSentiment?.twitter)}`}>
+                        {formatValueWithNA(socialSentiment?.twitter, (v) => v.toFixed(2))}
+                      </div>
+                      <div className={`${getFontSizeClass('xs')}`}>🟢</div>
+                    </div>
+                    <div>
+                      <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>Reddit</div>
+                      <div className={`${getFontSizeClass('lg')} font-bold ${getSentimentColor(socialSentiment?.reddit)}`}>
+                        {formatValueWithNA(socialSentiment?.reddit, (v) => v.toFixed(2))}
+                      </div>
+                      <div className={`${getFontSizeClass('xs')}`}>🟢</div>
+                    </div>
+                    <div>
+                      <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>News</div>
+                      <div className={`${getFontSizeClass('lg')} font-bold ${getSentimentColor(socialSentiment?.news)}`}>
+                        {formatValueWithNA(socialSentiment?.news, (v) => v.toFixed(2))}
+                      </div>
+                      <div className={`${getFontSizeClass('xs')}`}>🟢</div>
+                    </div>
+                    <div>
+                      <div className={`${getFontSizeClass('sm')} text-gray-600 mb-1`}>Google</div>
+                      <div className={`${getFontSizeClass('lg')} font-bold text-green-600`}>
+                        {formatValueWithNA(socialSentiment?.googleTrends)}
+                      </div>
+                      <div className={`${getFontSizeClass('xs')}`}>📈</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* News */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className={`${getFontSizeClass('lg')} font-semibold`}>News</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {news.map((item) => (
+                      <div key={item.id} className={`${getFontSizeClass('sm')}`}>
+                        • {item.title}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Alerts & Notifications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className={`${getFontSizeClass('lg')} font-semibold`}>Alerts & Notifications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 mb-4">
+                  {alerts.length > 0 ? (
+                    alerts.map((alert) => (
+                      <div key={alert.id} className="flex items-center space-x-2 text-sm">
+                        <span>{getAlertIcon(alert.type)}</span>
+                        <span className="font-medium">{alert.title}:</span>
+                        <span>{alert.message}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={`${getFontSizeClass('sm')} text-gray-500 text-center py-4`}>
+                      No alerts at this time
+                    </div>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Alert
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Alert Settings
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Bell className="h-4 w-4 mr-2" />
+                    Telegram Alerts
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Debug Tab */}
+          <TabsContent value="debug" className="space-y-6">
+            <DebugTab dataErrors={dataErrors} />
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      {/* Add Coin Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Coin</DialogTitle>
+            <DialogDescription>
+              Add a new cryptocurrency to your watchlist
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="coinId">Coin ID</Label>
+              <Input
+                id="coinId"
+                placeholder="e.g., bitcoin, ethereum"
+                value={newCoinId}
+                onChange={(e) => setNewCoinId(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="symbol">Symbol</Label>
+              <Input
+                id="symbol"
+                placeholder="e.g., BTC, ETH"
+                value={newCoinSymbol}
+                onChange={(e) => setNewCoinSymbol(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Bitcoin, Ethereum"
+                value={newCoinName}
+                onChange={(e) => setNewCoinName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCoin}>
+              Add Coin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
