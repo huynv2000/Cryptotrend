@@ -317,7 +317,7 @@ class TokenTerminalDataProvider {
     try {
       const cryptocurrencies = await db.cryptocurrency.findMany({
         where: { isActive: true },
-        orderBy: { marketCap: 'desc' },
+        orderBy: { rank: 'asc' },
         take: 20 // Limit to top 20 for free tier
       });
 

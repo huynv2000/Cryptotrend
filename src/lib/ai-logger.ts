@@ -242,6 +242,9 @@ class AILogger {
 // Export singleton instance
 export const aiLogger = new AILogger()
 
+// Export class with Logger alias for compatibility
+export { AILogger as Logger }
+
 // Export convenience functions
 export const logAIAnalysis = aiLogger.logAnalysis.bind(aiLogger)
 export const logAIStart = aiLogger.logStart.bind(aiLogger)

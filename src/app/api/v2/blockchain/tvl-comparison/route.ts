@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { TVLDataCollectionService } from '@/lib/tvl-data-collection';
+import { TVLService } from '@/lib/tvl-service';
 import { DeFiLlamaService } from '@/lib/defillama-service';
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const timeframe = searchParams.get('timeframe') || '24h';
     
     // Initialize services
-    const tvlService = TVLDataCollectionService.getInstance();
+    const tvlService = TVLService.getInstance();
     const defiLlamaService = DeFiLlamaService.getInstance();
 
     // Get TVL ranking for all chains
@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        // Get TVL metrics
-        const tvlMetrics = await tvlService.getLatestTVLMetrics(crypto.id);
+        // Get TVL metrics using DeFiLlama service directly
+        const tvlAnalytics = await defiLlamaService.getBlockchainTVLMetrics(crypto.coinGeckoId);
         
         // Get market data
         const priceData = await db.priceHistory.findFirst({
@@ -60,7 +60,9 @@ export async function GET(request: NextRequest) {
 
         // Calculate metrics
         const marketCap = priceData?.marketCap || 0;
-        const tvl = tvlMetrics?.chainTVL || 0;
+        const tvlFromChain = tvlAnalytics?.chain?.tvl || 0;
+        const tvlFromRanking = rankingData?.tvl || 0;
+        const tvl = tvlFromChain || tvlFromRanking;
         const tvlToMarketCapRatio = marketCap > 0 ? (tvl / marketCap) * 100 : 0;
 
         comparisonData.push({
@@ -72,12 +74,12 @@ export async function GET(request: NextRequest) {
           },
           tvlMetrics: {
             chainTVL: tvl,
-            chainTVLChange24h: tvlMetrics?.chainTVLChange24h || 0,
-            chainTVLChange7d: tvlMetrics?.chainTVLChange7d || 0,
-            tvlDominance: tvlMetrics?.tvlDominance || 0,
-            tvlRank: tvlMetrics?.tvlRank || rankingData?.rank || 0,
-            tvlPeak: tvlMetrics?.tvlPeak || 0,
-            tvlToMarketCapRatio: tvlMetrics?.tvlToMarketCapRatio || tvlToMarketCapRatio
+            chainTVLChange24h: tvlAnalytics?.chain?.change_1d || 0,
+            chainTVLChange7d: tvlAnalytics?.chain?.change_7d || 0,
+            tvlDominance: tvlAnalytics?.chain?.dominance || 0,
+            tvlRank: tvlAnalytics?.chain?.rank || rankingData?.rank || 0,
+            tvlPeak: tvlAnalytics?.chain?.peak || tvl,
+            tvlToMarketCapRatio: tvlToMarketCapRatio
           },
           marketData: {
             marketCap,
@@ -91,13 +93,13 @@ export async function GET(request: NextRequest) {
             change_7d: 0,
             change_30d: 0
           },
-          composition: tvlMetrics ? {
-            defiTVL: tvlMetrics.defiTVL || 0,
-            stakingTVL: tvlMetrics.stakingTVL || 0,
-            bridgeTVL: tvlMetrics.bridgeTVL || 0,
-            lendingTVL: tvlMetrics.lendingTVL || 0,
-            dexTVL: tvlMetrics.dexTVL || 0,
-            yieldTVL: tvlMetrics.yieldTVL || 0
+          composition: tvlAnalytics ? {
+            defiTVL: tvl,
+            stakingTVL: 0, // Will be calculated from protocol categories
+            bridgeTVL: 0, // Will be calculated from protocol categories
+            lendingTVL: 0, // Will be calculated from protocol categories
+            dexTVL: 0, // Will be calculated from protocol categories
+            yieldTVL: 0 // Will be calculated from protocol categories
           } : {
             defiTVL: 0,
             stakingTVL: 0,

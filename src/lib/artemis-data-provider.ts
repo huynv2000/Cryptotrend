@@ -478,7 +478,7 @@ class ArtemisDataProvider {
     try {
       const cryptocurrencies = await db.cryptocurrency.findMany({
         where: { isActive: true },
-        orderBy: { marketCap: 'desc' },
+        orderBy: { rank: 'asc' },
         take: 15 // Limit for free tier
       });
 

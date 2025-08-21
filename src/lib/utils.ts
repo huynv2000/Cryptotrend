@@ -33,17 +33,71 @@ export function formatNumber(num: number | null | undefined, decimals: number = 
   return value.toFixed(decimals);
 }
 
+// Enhanced currency formatting using FinancialFormatter
 export function formatCurrency(num: number | null | undefined, currency: string = 'USD'): string {
+  // Import FinancialFormatter dynamically to avoid circular dependencies
+  // For now, use the enhanced compact formatting
   if (num === null || num === undefined || isNaN(num)) {
     return 'N/A';
   }
+  
+  // Use compact formatting for better readability
   const value = Number(num);
+  if (value >= 1e12) {
+    return `$${(value / 1e12).toFixed(2)}T`;
+  } else if (value >= 1e9) {
+    return `$${(value / 1e9).toFixed(2)}B`;
+  } else if (value >= 1e6) {
+    return `$${(value / 1e6).toFixed(2)}M`;
+  } else if (value >= 1e3) {
+    return `$${(value / 1e3).toFixed(2)}K`;
+  }
+  
+  // For smaller values, use standard currency format
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+// New enhanced formatting functions
+export function formatCurrencyCompact(num: number | null | undefined, currency: string = 'USD'): string {
+  if (num === null || num === undefined || isNaN(num)) {
+    return 'N/A';
+  }
+  
+  const value = Number(num);
+  if (value >= 1e12) {
+    return `$${(value / 1e12).toFixed(2)}T`;
+  } else if (value >= 1e9) {
+    return `$${(value / 1e9).toFixed(2)}B`;
+  } else if (value >= 1e6) {
+    return `$${(value / 1e6).toFixed(2)}M`;
+  } else if (value >= 1e3) {
+    return `$${(value / 1e3).toFixed(2)}K`;
+  }
+  
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export function formatCurrencyDetailed(num: number | null | undefined, currency: string = 'USD'): string {
+  if (num === null || num === undefined || isNaN(num)) {
+    return 'N/A';
+  }
+  
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
 }
 
 export function formatPercent(num: number | null | undefined, decimals: number = 2): string {

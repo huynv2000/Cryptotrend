@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useBlockchainStore } from '@/store/blockchainStore';
 import { useAllBlockchainData, useRealTimeUpdates } from '@/hooks/useBlockchainData';
+import { memoryOptimizer, MemoryUtils } from '@/lib/memory-optimizer';
 import DashboardHeader from './header/DashboardHeader';
 import UsageMetricsSectionWithBaseline from './usage-metrics/UsageMetricsSectionWithBaseline';
 import TVLMetricsSectionWithBaseline from './tvl-metrics/TVLMetricsSectionWithBaseline';
@@ -13,6 +14,7 @@ import EnhancedTVLMetricsSection from './tvl-metrics/EnhancedTVLMetricsSection';
 import TvlComparisonCard from './tvl-metrics/TvlComparisonCard';
 import CashFlowSection from './cashflow-metrics/CashFlowSection';
 import MarketAnalysisSection from './market-analysis/MarketAnalysisSection';
+import TVLHistoryChartOptimized from './tvl-history/TVLHistoryChartOptimized';
 import { LoadingState } from '@/components/LoadingState';
 import { cn } from '@/lib/utils';
 import type { BlockchainValue, TimeframeValue } from '@/lib/types';
@@ -36,6 +38,18 @@ export default function BlockchainDashboard({
     store.setSelectedTimeframe(initialTimeframe);
     setTheme('dark'); // Force dark theme for professional dashboard
     setMounted(true);
+    
+    // Initialize memory optimization
+    memoryOptimizer.startMonitoring();
+    
+    // Register cleanup for navigation scenario
+    memoryOptimizer.registerCleanup('dashboard-navigation', () => {
+      memoryOptimizer.optimizeForScenario('navigation');
+    });
+    
+    return () => {
+      memoryOptimizer.unregisterCleanup('dashboard-navigation');
+    };
   }, [initialBlockchain, initialTimeframe, setTheme]);
   
   // Get current state from store
@@ -75,14 +89,23 @@ export default function BlockchainDashboard({
   };
   
   // Handle refresh
-  const handleRefresh = () => {
+  const handleRefresh = MemoryUtils.debounce(() => {
+    memoryOptimizer.optimizeForScenario('data-load');
     refresh();
-  };
+  }, 300);
   
   // Handle sidebar toggle
-  const handleSidebarToggle = () => {
+  const handleSidebarToggle = MemoryUtils.throttle(() => {
     store.setSidebarOpen(!sidebarOpen);
-  };
+  }, 200);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      memoryOptimizer.unregisterCleanup('dashboard-navigation');
+      memoryOptimizer.stopMonitoring();
+    };
+  }, []);
   
   // Don't render until mounted to avoid hydration issues
   if (!mounted) {
@@ -178,6 +201,16 @@ export default function BlockchainDashboard({
                 timeframe={selectedTimeframe}
                 data={data.enhancedTvlMetrics}
                 isLoading={isLoading}
+              />
+              
+              {/* TVL History Chart */}
+              <TVLHistoryChartOptimized
+                coinId={selectedBlockchain}
+                coinName={selectedBlockchain.charAt(0).toUpperCase() + selectedBlockchain.slice(1)}
+                timeframe={selectedTimeframe === '24h' ? '24H' : selectedTimeframe === '7d' ? '7D' : selectedTimeframe === '30d' ? '30D' : '90D'}
+                height={400}
+                showControls={true}
+                autoRefresh={true}
               />
               
               {/* TVL Comparison Card */}

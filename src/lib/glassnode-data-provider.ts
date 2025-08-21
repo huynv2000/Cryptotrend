@@ -750,7 +750,7 @@ class GlassnodeDataProvider {
     try {
       const cryptocurrencies = await db.cryptocurrency.findMany({
         where: { isActive: true },
-        orderBy: { marketCap: 'desc' },
+        orderBy: { rank: 'asc' },
         take: 10 // Limit for free tier
       });
 

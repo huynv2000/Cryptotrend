@@ -4,15 +4,21 @@
 'use client';
 
 import { useState } from 'react';
-import { TrendingUp, TrendingDown, BarChart3, PieChart, Layers, Target, DollarSign, Percent, Hash } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, PieChart, Layers, Target, DollarSign, Percent, Hash, RefreshCw, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MetricCardWithBaseline from '../ui/MetricCardWithBaseline';
 import { LoadingState } from '@/components/LoadingState';
-import { cn, formatNumber, formatCurrency } from '@/lib/utils';
+import { cn, formatNumber, formatCurrency, formatCurrencyCompact, formatCurrencyDetailed } from '@/lib/utils';
 import type { TVLMetrics, BlockchainValue, TimeframeValue } from '@/lib/types';
+
+// TVL History imports
+import TVLBarChart from '../tvl-history/TVLBarChart';
+import MovingAverageLine from '../tvl-history/MovingAverageLine';
+import { useOptimizedTVLHistory } from '@/hooks/useOptimizedTVLHistory';
+import { format } from 'date-fns';
 
 interface TVLMetricsSectionProps {
   blockchain: BlockchainValue;
@@ -64,55 +70,111 @@ export default function TVLMetricsSectionWithBaseline({
 }: TVLMetricsSectionProps) {
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   
+  // TVL History state
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'24H' | '7D' | '30D' | '90D'>('30D');
+  const [showMovingAverage, setShowMovingAverage] = useState(true);
+  const [isTVLLoading, setIsTVLLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // Get coin ID from blockchain
+  const getCoinId = (blockchain: BlockchainValue): string => {
+    switch (blockchain) {
+      case 'Ethereum': return 'ethereum';
+      case 'BSC': return 'binance-smart-chain';
+      case 'Polygon': return 'polygon';
+      case 'Arbitrum': return 'arbitrum';
+      case 'Optimism': return 'optimism';
+      default: return blockchain.toLowerCase();
+    }
+  };
+
+  const coinId = getCoinId(blockchain);
+
+  // Use optimized TVL history hook
+  const {
+    data: tvlHistory,
+    movingAverageData,
+    metrics,
+    stats,
+    loading: tvlLoading,
+    error: tvlError,
+    refetch,
+    cacheInfo,
+    analysis
+  } = useOptimizedTVLHistory({
+    coinId,
+    timeframe: selectedTimeframe,
+    enabled: true,
+    includeMovingAverage: true,
+    includeMetrics: true,
+    onSuccess: (data) => {
+      setLastUpdated(new Date());
+    }
+  });
+
   const handleMetricClick = (metricKey: string) => {
     setSelectedMetric(selectedMetric === metricKey ? null : metricKey);
   };
 
-  const createBaselineComparison = (metricKey: string, timeframe: TimeframeValue) => {
-    if (!data || !data.historicalData) return undefined;
-    
-    const metricData = data[metricKey as keyof TVLMetrics] as any;
-    if (!metricData || metricData.value === null || metricData.value === undefined) return undefined;
-    
-    const currentValue = metricData.value;
-    
-    // Calculate baseline based on timeframe
-    let baselineValue: number;
-    switch (timeframe) {
-      case '1h':
-        // Use 7-day average for 1H timeframe
-        baselineValue = data.historicalData.slice(-7).reduce((sum: number, point: any) => sum + (point[metricKey] || 0), 0) / 7;
-        break;
-      case '24h':
-        // Use 7-day average for 24H timeframe
-        baselineValue = data.historicalData.slice(-7).reduce((sum: number, point: any) => sum + (point[metricKey] || 0), 0) / 7;
-        break;
-      case '7d':
-        // Use 30-day average for 7D timeframe
-        baselineValue = data.historicalData.slice(-30).reduce((sum: number, point: any) => sum + (point[metricKey] || 0), 0) / 30;
-        break;
-      case '30d':
-        // Use 90-day average for 30D timeframe
-        baselineValue = data.historicalData.slice(-90).reduce((sum: number, point: any) => sum + (point[metricKey] || 0), 0) / 90;
-        break;
-      case '90d':
-        // Use 90-day average for 90D timeframe
-        baselineValue = data.historicalData.slice(-90).reduce((sum: number, point: any) => sum + (point[metricKey] || 0), 0) / 90;
-        break;
-      default:
-        baselineValue = currentValue;
+  // Handle TVL refresh
+  const handleTVLRefresh = async () => {
+    setIsTVLLoading(true);
+    try {
+      await refetch();
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error refreshing TVL data:', error);
+    } finally {
+      setIsTVLLoading(false);
     }
-    
-    if (!baselineValue || baselineValue === 0) return undefined;
-    
-    const growthPercent = ((currentValue - baselineValue) / baselineValue) * 100;
-    
-    return {
-      timeframe,
-      baselineValue,
-      growthPercent,
-      isPositive: growthPercent >= 0
-    };
+  };
+
+  // Handle timeframe change
+  const handleTimeframeChange = (newTimeframe: typeof selectedTimeframe) => {
+    setSelectedTimeframe(newTimeframe);
+  };
+
+  // Render TVL chart
+  const renderTVLChart = () => {
+    if (tvlHistory.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center text-gray-500">
+            <div className="text-lg font-medium mb-2">No Data Available</div>
+            <div className="text-sm">Unable to display TVL chart</div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative h-96">
+        {/* Bar Chart */}
+        <div className="absolute inset-0">
+          <TVLBarChart
+            data={tvlHistory}
+            height={384}
+            showGrid={true}
+            showAnimation={true}
+          />
+        </div>
+        
+        {/* Moving Average Overlay */}
+        {showMovingAverage && movingAverageData.length > 0 && (
+          <div className="absolute inset-0 pointer-events-none">
+            <MovingAverageLine
+              data={movingAverageData.slice(0, tvlHistory.length)}
+              period={30}
+              height={384}
+              showDots={false}
+              showAnimation={true}
+              showReferenceLines={false}
+              color="#f59e0b"
+            />
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (isLoading && !data) {
@@ -179,7 +241,7 @@ export default function TVLMetricsSectionWithBaseline({
         </div>
         <div className="flex items-center space-x-2">
           <Badge variant="outline">
-            Baseline Comparison
+            Real-time Analysis
           </Badge>
         </div>
       </div>
@@ -197,7 +259,6 @@ export default function TVLMetricsSectionWithBaseline({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {tvlMetricsConfig.map((metric) => {
               const metricData = data[metric.key as keyof TVLMetrics] as any;
-              const baselineComparison = createBaselineComparison(metric.key, timeframe);
               
               return (
                 <MetricCardWithBaseline
@@ -210,7 +271,6 @@ export default function TVLMetricsSectionWithBaseline({
                     changePercent: metricData?.changePercent,
                     trend: metricData?.trend
                   }}
-                  baselineComparison={baselineComparison}
                   formatType={metric.formatType}
                   isPositiveGood={metric.isPositiveGood}
                   className={cn(
@@ -251,13 +311,13 @@ export default function TVLMetricsSectionWithBaseline({
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">
-                          {formatCurrency(protocol.tvl)}
+                          {formatCurrencyCompact(protocol.tvl)}
                         </div>
                         <div className={cn(
                           "text-xs",
-                          protocol.change_1d >= 0 ? "text-green-500" : "text-red-500"
+                          protocol.change_1d != null && protocol.change_1d >= 0 ? "text-green-500" : "text-red-500"
                         )}>
-                          {protocol.change_1d >= 0 ? '+' : ''}{protocol.change_1d.toFixed(1)}%
+                          {protocol.change_1d != null ? (protocol.change_1d >= 0 ? '+' : '') + protocol.change_1d.toFixed(1) + '%' : 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -287,7 +347,7 @@ export default function TVLMetricsSectionWithBaseline({
                             {category.replace(/([A-Z])/g, ' $1').trim()}
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {percentage.toFixed(1)}%
+                            {percentage != null ? percentage.toFixed(1) + '%' : 'N/A'}
                           </span>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
@@ -297,7 +357,7 @@ export default function TVLMetricsSectionWithBaseline({
                           />
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatCurrency(tvl as number)}
+                          {formatCurrencyCompact(tvl as number)}
                         </div>
                       </div>
                     );
@@ -311,39 +371,232 @@ export default function TVLMetricsSectionWithBaseline({
         <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5" />
-                <span>Historical TVL Trends</span>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <BarChart3 className="h-5 w-5 text-blue-500" />
+                  <span>Historical TVL Trends</span>
+                  {analysis && (
+                    <Badge 
+                      variant={analysis.trend === 'bullish' ? 'default' : analysis.trend === 'bearish' ? 'destructive' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {analysis.trend.toUpperCase()}
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTVLRefresh}
+                    disabled={isTVLLoading || tvlLoading}
+                  >
+                    <RefreshCw className={cn(
+                      "h-4 w-4 mr-2",
+                      (isTVLLoading || tvlLoading) && "animate-spin"
+                    )} />
+                    Refresh
+                  </Button>
+                </div>
               </CardTitle>
+              
+              {/* Stats Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-blue-600">
+                    {formatCurrencyCompact(stats.currentTVL)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Current TVL</div>
+                </div>
+                <div className="text-center">
+                  <div className={cn(
+                    "text-lg font-semibold",
+                    stats.change24h != null && stats.change24h >= 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {stats.change24h != null ? (stats.change24h >= 0 ? '+' : '') + stats.change24h.toFixed(2) + '%' : 'N/A'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">24h Change</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-purple-600">
+                    {formatCurrencyCompact(stats.avgTVL)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Average TVL</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-green-600">
+                    {formatCurrencyCompact(stats.peakTVL)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Peak TVL</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-orange-600">
+                    {stats.volatility != null ? stats.volatility.toFixed(1) + '%' : 'N/A'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Volatility</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-600">
+                    {tvlHistory.length}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Data Points</div>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Historical TVL charts will be displayed here
-                </p>
+            
+            <CardContent className="space-y-4">
+              {/* Timeframe Selector */}
+              <div className="flex items-center justify-between">
+                <div className="flex space-x-2">
+                  {(['24H', '7D', '30D', '90D'] as const).map((tf) => (
+                    <Button
+                      key={tf}
+                      variant={selectedTimeframe === tf ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleTimeframeChange(tf)}
+                    >
+                      {tf}
+                    </Button>
+                  ))}
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  {lastUpdated && (
+                    <span>Last updated: {format(lastUpdated, 'HH:mm:ss')}</span>
+                  )}
+                  {cacheInfo.hit && (
+                    <Badge variant="secondary" className="text-xs">
+                      Cached
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Chart */}
+              <div className="w-full">
+                {(tvlLoading || isTVLLoading) && tvlHistory.length === 0 ? (
+                  <div className="flex items-center justify-center h-96">
+                    <LoadingState text="Loading TVL chart..." />
+                  </div>
+                ) : tvlError ? (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                      <div className="text-red-500 mb-2">⚠️ Error Loading Data</div>
+                      <div className="text-sm text-gray-600 mb-4">
+                        {tvlError}
+                      </div>
+                      <Button onClick={handleTVLRefresh} variant="outline">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  renderTVLChart()
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="analysis" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5" />
-                <span>TVL Analysis</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Advanced TVL analysis will be displayed here
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Moving Average Analysis */}
+            {metrics && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Activity className="h-5 w-5 text-amber-500" />
+                    <span>30-Day Moving Average Analysis</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Current MA</div>
+                      <div className="text-lg font-semibold">
+                        {formatCurrencyCompact(metrics.currentMA)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Distance from MA</div>
+                      <div className={cn(
+                        "text-lg font-semibold",
+                        metrics.distanceFromMA != null && metrics.distanceFromMA >= 0 ? "text-green-600" : "text-red-600"
+                      )}>
+                        {metrics.distanceFromMA != null ? (metrics.distanceFromMA >= 0 ? '+' : '') + metrics.distanceFromMA.toFixed(2) + '%' : 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">MA Trend</div>
+                      <div className={cn(
+                        "text-lg font-semibold",
+                        metrics.maTrend === 'up' ? "text-green-600" : 
+                        metrics.maTrend === 'down' ? "text-red-600" : "text-gray-600"
+                      )}>
+                        {metrics.maTrend.toUpperCase()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Signal</div>
+                      <div className={cn(
+                        "text-lg font-semibold",
+                        metrics.signal === 'buy_signal' ? "text-green-600" :
+                        metrics.signal === 'sell_signal' ? "text-red-600" :
+                        metrics.signal === 'overbought' ? "text-orange-600" :
+                        metrics.signal === 'oversold' ? "text-blue-600" : "text-gray-600"
+                      )}>
+                        {metrics.signal.replace('_', ' ').toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Market Analysis */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  <span>Market Analysis</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Trend Direction</div>
+                    <div className={cn(
+                      "text-lg font-semibold",
+                      analysis.trend === 'bullish' ? "text-green-600" : 
+                      analysis.trend === 'bearish' ? "text-red-600" : "text-gray-600"
+                    )}>
+                      {analysis.trend.charAt(0).toUpperCase() + analysis.trend.slice(1)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Signal Strength</div>
+                    <div className="text-lg font-semibold">
+                      {analysis.strength != null ? analysis.strength.toFixed(0) + '%' : 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Current Signal</div>
+                    <div className="text-lg font-semibold">
+                      {analysis.signal.replace('_', ' ').toUpperCase()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Volatility</div>
+                    <div className="text-lg font-semibold text-orange-600">
+                      {stats.volatility != null ? stats.volatility.toFixed(1) + '%' : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
       

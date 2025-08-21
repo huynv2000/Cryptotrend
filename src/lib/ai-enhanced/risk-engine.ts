@@ -734,3 +734,6 @@ class SystemicAnalyzer {
     };
   }
 }
+
+// Export class with RiskEngine alias for compatibility
+export { RiskAssessmentEngine as RiskEngine }

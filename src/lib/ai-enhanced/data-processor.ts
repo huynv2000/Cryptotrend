@@ -610,3 +610,6 @@ class TimeSeriesPreparer {
     return values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
   }
 }
+
+// Export class with DataProcessor alias for compatibility
+export { AdvancedDataProcessor as DataProcessor }

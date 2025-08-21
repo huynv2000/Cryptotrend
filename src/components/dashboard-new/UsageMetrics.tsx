@@ -156,7 +156,7 @@ export function UsageMetrics({ metrics, timeRange, onTimeRangeChange }: UsageMet
                 <div className={`flex items-center space-x-1 ${getTrendColor(metric.trend)}`}>
                   {getTrendIcon(metric.trend)}
                   <span className="text-sm font-medium">
-                    {metric.changePercent > 0 ? '+' : ''}{metric.changePercent.toFixed(2)}%
+                    {metric.changePercent != null ? (metric.changePercent > 0 ? '+' : '') + metric.changePercent.toFixed(2) + '%' : 'N/A'}
                   </span>
                 </div>
               </div>
