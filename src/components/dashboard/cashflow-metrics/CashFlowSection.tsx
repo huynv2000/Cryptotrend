@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { BridgeFlowService } from '@/lib/bridge-flow-service';
 import type { CashflowMetrics, BlockchainValue, TimeframeValue } from '@/lib/types';
 import type { BridgeFlowHistoricalData } from '@/types/bridge-flow';
+import type { TrendAnalysis } from '@/lib/trend-calculator';
 
 interface CashFlowSectionProps {
   blockchain: BlockchainValue;
@@ -68,6 +69,16 @@ export default function CashFlowSection({
   const [detailTimeRange, setDetailTimeRange] = useState<'7D' | '30D' | '90D'>('90D');
   const [historicalData, setHistoricalData] = useState<BridgeFlowHistoricalData[]>([]);
   const [isHistoricalLoading, setIsHistoricalLoading] = useState(false);
+  
+  const calculateTrendStrength = (changePercent: number | null | undefined): number => {
+    if (!changePercent && changePercent !== 0) return 0;
+    const absChange = Math.abs(changePercent);
+    if (absChange >= 10) return 1.0;
+    if (absChange >= 5) return 0.7;
+    if (absChange >= 2) return 0.4;
+    if (absChange >= 1) return 0.2;
+    return 0.1;
+  };
   
   const handleMetricClick = (metricKey: string) => {
     setSelectedMetric(selectedMetric === metricKey ? null : metricKey);
@@ -225,24 +236,84 @@ export default function CashFlowSection({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <BridgeFlowsCard
                 data={data.bridgeFlows}
+                spikeDetection={data.spikeDetection?.bridgeFlows}
+                trendAnalysis={{
+                  direction: data.bridgeFlows?.trend || 'stable',
+                  strength: calculateTrendStrength(data.bridgeFlows?.changePercent),
+                  momentum: 'moderate',
+                  volatility: 0.1,
+                  confidence: 0.7,
+                  trendline: { slope: 0, intercept: 0, rSquared: 0 },
+                  keyPoints: { 
+                    peak: data.bridgeFlows?.value || 0, 
+                    trough: data.bridgeFlows?.value || 0, 
+                    current: data.bridgeFlows?.value || 0 
+                  },
+                  recommendations: ['Trend analysis available']
+                }}
                 isLoading={isLoading}
                 isSelected={selectedMetric === 'bridgeFlows'}
                 onClick={() => handleMetricClick('bridgeFlows')}
               />
               <ExchangeFlowsCard
                 data={data.exchangeFlows}
+                spikeDetection={data.spikeDetection?.exchangeFlows}
+                trendAnalysis={{
+                  direction: data.exchangeFlows?.trend || 'stable',
+                  strength: calculateTrendStrength(data.exchangeFlows?.changePercent),
+                  momentum: 'moderate',
+                  volatility: 0.1,
+                  confidence: 0.7,
+                  trendline: { slope: 0, intercept: 0, rSquared: 0 },
+                  keyPoints: { 
+                    peak: data.exchangeFlows?.value || 0, 
+                    trough: data.exchangeFlows?.value || 0, 
+                    current: data.exchangeFlows?.value || 0 
+                  },
+                  recommendations: ['Trend analysis available']
+                }}
                 isLoading={isLoading}
                 isSelected={selectedMetric === 'exchangeFlows'}
                 onClick={() => handleMetricClick('exchangeFlows')}
               />
               <StakingMetricsCard
                 data={data.stakingMetrics}
+                spikeDetection={data.spikeDetection?.stakingMetrics}
+                trendAnalysis={{
+                  direction: data.stakingMetrics?.trend || 'stable',
+                  strength: calculateTrendStrength(data.stakingMetrics?.changePercent),
+                  momentum: 'moderate',
+                  volatility: 0.1,
+                  confidence: 0.7,
+                  trendline: { slope: 0, intercept: 0, rSquared: 0 },
+                  keyPoints: { 
+                    peak: data.stakingMetrics?.value || 0, 
+                    trough: data.stakingMetrics?.value || 0, 
+                    current: data.stakingMetrics?.value || 0 
+                  },
+                  recommendations: ['Trend analysis available']
+                }}
                 isLoading={isLoading}
                 isSelected={selectedMetric === 'stakingMetrics'}
                 onClick={() => handleMetricClick('stakingMetrics')}
               />
               <MiningValidationCard
                 data={data.miningValidation}
+                spikeDetection={data.spikeDetection?.miningValidation}
+                trendAnalysis={{
+                  direction: data.miningValidation?.trend || 'stable',
+                  strength: calculateTrendStrength(data.miningValidation?.changePercent),
+                  momentum: 'moderate',
+                  volatility: 0.1,
+                  confidence: 0.7,
+                  trendline: { slope: 0, intercept: 0, rSquared: 0 },
+                  keyPoints: { 
+                    peak: data.miningValidation?.value || 0, 
+                    trough: data.miningValidation?.value || 0, 
+                    current: data.miningValidation?.value || 0 
+                  },
+                  recommendations: ['Trend analysis available']
+                }}
                 isLoading={isLoading}
                 isSelected={selectedMetric === 'miningValidation'}
                 onClick={() => handleMetricClick('miningValidation')}

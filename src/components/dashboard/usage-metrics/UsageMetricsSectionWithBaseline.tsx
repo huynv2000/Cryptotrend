@@ -155,6 +155,7 @@ export default function UsageMetricsSectionWithBaseline({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {metricsConfig.map((metric) => {
               const metricData = data[metric.key as keyof UsageMetrics] as any;
+              const spikeData = data.spikeDetection?.[metric.key as keyof UsageMetrics['spikeDetection']];
               
               return (
                 <MetricCardWithBaseline
@@ -166,8 +167,8 @@ export default function UsageMetricsSectionWithBaseline({
                     value: metricData?.value,
                     changePercent: metricData?.changePercent,
                     trend: metricData?.trend,
-                    isSpike: data.spikeDetection?.[metric.key]?.isSpike,
-                    spikeSeverity: data.spikeDetection?.[metric.key]?.severity
+                    isSpike: spikeData?.isSpike,
+                    spikeSeverity: spikeData?.severity
                   }}
                   formatType={metric.formatType}
                   isPositiveGood={metric.isPositiveGood}

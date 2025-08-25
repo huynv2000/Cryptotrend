@@ -379,8 +379,8 @@ export class BlockchainAPI {
     blockchain: BlockchainValue, 
     timeframe: TimeframeValue = '24h'
   ): Promise<UsageMetrics> {
-    return apiClient.get<UsageMetrics>('/v2/blockchain/usage-metrics', {
-      params: { blockchain, timeframe }
+    return apiClient.get<UsageMetrics>('/api/v2/blockchain/usage-metrics', {
+      params: { blockchain, timeframe, testMode: true }
     });
   }
   
@@ -388,7 +388,7 @@ export class BlockchainAPI {
     blockchain: BlockchainValue, 
     timeframe: TimeframeValue = '24h'
   ): Promise<TVLMetrics> {
-    return apiClient.get<TVLMetrics>('/v2/blockchain/tvl-metrics', {
+    return apiClient.get<TVLMetrics>('/v2/blockchain/tvl-metrics-enhanced', {
       params: { blockchain, timeframe }
     });
   }

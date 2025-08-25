@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { formatNumber, formatPercent, formatFinancialValue, formatHashRate, getTrendColor } from '@/lib/utils';
 import { TrendIndicator } from '@/components/ui/trend-indicator';
 import { TrendModal } from '@/components/ui/trend-modal';
+import SpikeWarningSimple from '../ui/SpikeWarningSimple';
 import type { MetricValue, SpikeDetectionResult } from '@/lib/types';
 import type { TrendAnalysis } from '@/lib/trend-calculator';
 
@@ -73,18 +74,14 @@ export default function BaseMetricCard({
     return getTrendColor(data.change, isPositiveGood);
   };
   
-  const getSpikeBadge = () => {
-    if (!spikeDetection || !spikeDetection.isSpike) return null;
-    
-    const variant = spikeDetection.severity === 'high' ? 'destructive' : 
-                   spikeDetection.severity === 'medium' ? 'default' : 'secondary';
-    
-    return (
-      <Badge variant={variant} className="text-xs">
-        <AlertTriangle className="h-3 w-3 mr-1" />
-        Spike
-      </Badge>
-    );
+  const calculateTrendStrength = (changePercent: number | null | undefined): number => {
+    if (!changePercent && changePercent !== 0) return 0;
+    const absChange = Math.abs(changePercent);
+    if (absChange >= 10) return 1.0;
+    if (absChange >= 5) return 0.7;
+    if (absChange >= 2) return 0.4;
+    if (absChange >= 1) return 0.2;
+    return 0.1;
   };
   
   if (isLoading) {
@@ -181,9 +178,7 @@ export default function BaseMetricCard({
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              {getSpikeBadge()}
-              <div className={cn("flex items-center space-x-1", getChangeColor())}>
+            <div className={cn("flex items-center space-x-1", getChangeColor())}>
                 {getTrendIcon()}
                 <span className="text-xs font-medium">
                   {data.changePercent !== null && data.changePercent !== undefined 
@@ -192,10 +187,22 @@ export default function BaseMetricCard({
                 </span>
               </div>
             </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
         
-        <CardContent>
+        <CardContent className="relative">
+          {/* Debug logging */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs p-1.5 z-[999] rounded shadow-lg">
+              DEBUG: isSpike={String(spikeDetection?.isSpike)}, severity={spikeDetection?.severity || 'none'}
+            </div>
+          )}
+          
+          <SpikeWarningSimple
+            isSpike={spikeDetection?.isSpike || false}
+            severity={spikeDetection?.severity}
+            className="z-[998]"
+          />
+          
           <div className="space-y-4">
             {/* Main Value */}
             <div className="flex items-baseline space-x-2">
@@ -213,10 +220,12 @@ export default function BaseMetricCard({
             <div className="flex items-center justify-between">
               <TrendIndicator
                 trend={data?.trend || 'stable'}
-                strength={trendAnalysis?.strength || 0.5}
+                strength={calculateTrendStrength(data?.changePercent)}
+                showIcon={true}
                 showPercentage={true}
                 percentage={data?.changePercent}
                 size="sm"
+                className="text-xs"
               />
               <Button variant="ghost" size="sm" className="h-8 px-2">
                 <BarChart3 className="h-4 w-4" />
@@ -254,15 +263,6 @@ export default function BaseMetricCard({
                   {data.trend || 'stable'}
                 </span>
               </div>
-              
-              {spikeDetection?.isSpike && (
-                <div className="flex items-center space-x-1">
-                  <AlertTriangle className="h-3 w-3 text-orange-500" />
-                  <span className="text-xs text-orange-500 font-medium">
-                    {spikeDetection.severity} spike
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </CardContent>

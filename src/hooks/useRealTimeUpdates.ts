@@ -329,7 +329,6 @@ export function useRealTimeUpdates({
             label: 'View Details',
             action: () => {
               // Navigate to detailed view or show modal
-              console.log('Show spike details:', data);
             },
             primary: true,
           },

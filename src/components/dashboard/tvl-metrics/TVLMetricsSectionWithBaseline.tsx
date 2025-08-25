@@ -61,6 +61,14 @@ const tvlMetricsConfig = [
     formatType: 'number' as const,
     isPositiveGood: true
   },
+  {
+    key: 'defiTVL',
+    title: 'DeFi TVL',
+    description: 'Decentralized Finance TVL',
+    icon: <Layers className="h-5 w-5 text-blue-500" />,
+    formatType: 'currency' as const,
+    isPositiveGood: true
+  },
 ];
 
 export default function TVLMetricsSectionWithBaseline({
@@ -271,7 +279,9 @@ export default function TVLMetricsSectionWithBaseline({
                   data={{
                     value: metricData?.value,
                     changePercent: metricData?.changePercent,
-                    trend: metricData?.trend
+                    trend: metricData?.trend,
+                    isSpike: data.spikeDetection?.[metric.key as keyof TVLMetrics['spikeDetection']]?.isSpike,
+                    spikeSeverity: data.spikeDetection?.[metric.key as keyof TVLMetrics['spikeDetection']]?.severity
                   }}
                   formatType={metric.formatType}
                   formatStyle={preferences.numberFormat}

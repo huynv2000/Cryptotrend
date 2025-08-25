@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { SpikeDetectionEngine, MetricSpikeDetectors } from '@/lib/spike-detection';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const blockchain = searchParams.get('blockchain') || 'bitcoin';
     const timeframe = searchParams.get('timeframe') || '24h';
+    const testMode = searchParams.get('testMode') === 'true';
+
+    // Test mode: return cash flow spike data for testing
+    if (testMode) {
+      const testResponse = await generateTestCashflowSpikeData(blockchain, timeframe);
+      return NextResponse.json(testResponse);
+    }
 
     // Get cryptocurrency data
     const crypto = await db.cryptocurrency.findFirst({
@@ -156,6 +164,42 @@ export async function GET(request: NextRequest) {
     const previousStakingMetrics = calculateStakingValue(blockchain, previousOnChainData, previousPriceData);
     const previousMiningValidation = calculateMiningValidation(blockchain, previousOnChainData, previousPriceData);
 
+    // Prepare historical data for spike detection
+    const historicalCashflowData = {
+      bridgeFlows: generateHistoricalData(currentBridgeFlows, 30).map((value, i) => ({
+        timestamp: new Date(now.getTime() - (30 - i) * 24 * 60 * 60 * 1000),
+        value
+      })),
+      exchangeFlows: generateHistoricalData(currentExchangeFlows, 30).map((value, i) => ({
+        timestamp: new Date(now.getTime() - (30 - i) * 24 * 60 * 60 * 1000),
+        value
+      })),
+      stakingMetrics: generateHistoricalData(currentStakingMetrics, 30).map((value, i) => ({
+        timestamp: new Date(now.getTime() - (30 - i) * 24 * 60 * 60 * 1000),
+        value
+      })),
+      miningValidation: generateHistoricalData(currentMiningValidation, 30).map((value, i) => ({
+        timestamp: new Date(now.getTime() - (30 - i) * 24 * 60 * 60 * 1000),
+        value
+      })),
+    };
+
+    // Current values for spike detection
+    const currentCashflowValues = {
+      bridgeFlows: currentBridgeFlows,
+      exchangeFlows: currentExchangeFlows,
+      stakingMetrics: currentStakingMetrics,
+      miningValidation: currentMiningValidation,
+    };
+
+    // Generate spike detection results
+    const spikeDetectionResults = MetricSpikeDetectors.detectCashflowSpikes(
+      historicalCashflowData, 
+      currentCashflowValues,
+      blockchain,
+      timeframe
+    );
+
     // Format cashflow metrics data to match the expected interface
     const cashflowMetrics = {
       id: `cashflow-${blockchain}-${timeframe}-${now.getTime()}`,
@@ -204,6 +248,9 @@ export async function GET(request: NextRequest) {
         stakingTrends: generateStakingTrends(blockchain, onChainData, priceData),
         miningEfficiency: calculateMiningEfficiency(blockchain, onChainData, priceData),
       },
+      
+      // Spike detection results
+      spikeDetection: spikeDetectionResults,
     };
 
     return NextResponse.json(cashflowMetrics);
@@ -217,6 +264,17 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper functions
+function generateHistoricalData(currentValue: number, days: number): number[] {
+  const data: number[] = [];
+  for (let i = 0; i < days; i++) {
+    // Add some realistic variation to historical data
+    const variation = 1 + (Math.random() - 0.5) * 0.2; // ±10% variation
+    const trendFactor = 1 + (i / days) * 0.05; // Slight upward trend
+    data.push(currentValue * variation * trendFactor);
+  }
+  return data;
+}
+
 function calculateChange(currentValue: number, baselineValue: number): number {
   if (!currentValue || !baselineValue) return 0;
   return currentValue - baselineValue;
@@ -478,4 +536,181 @@ function calculatePredictionConfidence(onChainData: any, volumeData: any): numbe
   if (volumeData) confidence += 25;
   
   return Math.min(100, confidence);
+}
+
+// Generate test cash flow spike data for testing
+async function generateTestCashflowSpikeData(blockchain: string, timeframe: string) {
+  const now = new Date();
+  
+  // Generate realistic historical data with normal patterns
+  const generateNormalHistoricalData = (baseValue: number, days: number = 90) => {
+    const data = [];
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      
+      // Add realistic variation (±5%)
+      const variation = 1 + (Math.random() - 0.5) * 0.1;
+      // Add slight trend
+      const trendFactor = 1 + (i / days) * 0.02;
+      
+      data.push({
+        timestamp: date,
+        value: baseValue * variation * trendFactor
+      });
+    }
+    return data;
+  };
+
+  // Generate spike data for testing
+  const generateSpikeHistoricalData = (baseValue: number, spikeMultiplier: number, days: number = 90) => {
+    const data = [];
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      
+      let value = baseValue;
+      
+      // Create spike pattern: normal data with recent spike
+      if (i <= 3) { // Last 3 days show spike
+        const spikeIntensity = 1 + (spikeMultiplier - 1) * (3 - i) / 3;
+        value = baseValue * spikeIntensity;
+      } else {
+        // Normal variation for older data
+        const variation = 1 + (Math.random() - 0.5) * 0.1;
+        const trendFactor = 1 + (i / days) * 0.02;
+        value = baseValue * variation * trendFactor;
+      }
+      
+      data.push({
+        timestamp: date,
+        value: value
+      });
+    }
+    return data;
+  };
+
+  // Base values for cash flow metrics
+  const baseBridgeFlows = 5000000000; // $5B base bridge flows
+  const baseExchangeFlows = 8000000000; // $8B base exchange flows
+  const baseStakingMetrics = blockchain === 'ethereum' ? 10000000000 : 0; // $10B for ETH, 0 for others
+  const baseMiningValidation = blockchain === 'bitcoin' ? 25000000000 : 0; // $25B for BTC, 0 for others
+
+  // Current values with spikes
+  const currentValues = {
+    bridgeFlows: baseBridgeFlows * 4.0, // 300% spike
+    exchangeFlows: baseExchangeFlows * 2.875, // 187.5% spike ($23B total)
+    stakingMetrics: baseStakingMetrics > 0 ? baseStakingMetrics * 1.25 : 0, // 25% spike for staking chains
+    miningValidation: baseMiningValidation > 0 ? baseMiningValidation * 2.34 : 0, // 134% spike for mining chains
+  };
+
+  // Historical data for spike detection
+  const historicalData = {
+    bridgeFlows: generateSpikeHistoricalData(baseBridgeFlows, 4.0),
+    exchangeFlows: generateSpikeHistoricalData(baseExchangeFlows, 2.875),
+    stakingMetrics: baseStakingMetrics > 0 ? generateSpikeHistoricalData(baseStakingMetrics, 1.25) : generateNormalHistoricalData(0),
+    miningValidation: baseMiningValidation > 0 ? generateSpikeHistoricalData(baseMiningValidation, 2.34) : generateNormalHistoricalData(0),
+  };
+
+  // Generate spike detection results
+  const spikeDetectionResults = MetricSpikeDetectors.detectCashflowSpikes(
+    historicalData, 
+    currentValues,
+    blockchain,
+    timeframe
+  );
+
+  return {
+    id: `cashflow-test-${blockchain}-${timeframe}-${now.getTime()}`,
+    blockchain: blockchain as any,
+    timeframe: timeframe as any,
+    createdAt: now,
+    updatedAt: now,
+    
+    // Main metrics with spikes
+    bridgeFlows: {
+      value: currentValues.bridgeFlows,
+      change: currentValues.bridgeFlows * 3.0,
+      changePercent: 300.0,
+      trend: 'up' as const,
+      timestamp: now,
+    },
+    
+    exchangeFlows: {
+      value: currentValues.exchangeFlows,
+      change: currentValues.exchangeFlows * 1.875,
+      changePercent: 187.5,
+      trend: 'up' as const,
+      timestamp: now,
+    },
+    
+    stakingMetrics: {
+      value: currentValues.stakingMetrics,
+      change: baseStakingMetrics > 0 ? currentValues.stakingMetrics * 0.25 : 0,
+      changePercent: baseStakingMetrics > 0 ? 25.0 : 0,
+      trend: baseStakingMetrics > 0 ? 'up' as const : 'stable' as const,
+      timestamp: now,
+    },
+    
+    miningValidation: {
+      value: currentValues.miningValidation,
+      change: baseMiningValidation > 0 ? currentValues.miningValidation * 1.34 : 0,
+      changePercent: baseMiningValidation > 0 ? 134.0 : 0,
+      trend: baseMiningValidation > 0 ? 'up' as const : 'stable' as const,
+      timestamp: now,
+    },
+    
+    // Flow analysis with complex nested structures
+    flowAnalysis: {
+      bridgeFlowPatterns: [
+        {
+          direction: 'inflow' as const,
+          amount: currentValues.bridgeFlows * 0.6,
+          source: 'ethereum',
+          destination: blockchain,
+          timestamp: now,
+        },
+        {
+          direction: 'outflow' as const,
+          amount: currentValues.bridgeFlows * 0.4,
+          source: blockchain,
+          destination: 'ethereum',
+          timestamp: now,
+        }
+      ],
+      exchangeFlowCorrelations: [
+        {
+          metric1: 'exchange_inflow',
+          metric2: 'price',
+          correlation: 0.85,
+          significance: 0.96,
+          timeframe: '24h' as const,
+        },
+        {
+          metric1: 'exchange_outflow',
+          metric2: 'volume',
+          correlation: 0.78,
+          significance: 0.91,
+          timeframe: '24h' as const,
+        }
+      ],
+      stakingTrends: [
+        {
+          direction: currentValues.stakingMetrics > 10000000000 ? 'increasing' as const : 'stable' as const,
+          strength: Math.min(100, currentValues.stakingMetrics / 100000000),
+          period: 30,
+          confidence: 0.85,
+        }
+      ],
+      miningEfficiency: {
+        current: currentValues.miningValidation,
+        average: currentValues.miningValidation * 0.9,
+        peak: currentValues.miningValidation * 1.2,
+        efficiency: currentValues.miningValidation > 0 ? 1.34 : 0,
+      },
+    },
+    
+    // Spike detection results
+    spikeDetection: spikeDetectionResults,
+  };
 }

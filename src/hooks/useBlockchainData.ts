@@ -38,18 +38,10 @@ export function useUsageMetrics(blockchain: BlockchainValue, timeframe: Timefram
   return useQuery({
     queryKey: blockchainKeys.usageMetrics(blockchain, timeframe),
     queryFn: async () => {
-      console.log('🔍 [useUsageMetrics] Starting data fetch for:', { blockchain, timeframe });
-      console.log('🔍 [useUsageMetrics] Query key:', blockchainKeys.usageMetrics(blockchain, timeframe));
-      
       try {
-        console.log('🔍 [useUsageMetrics] Calling API.blockchain.getUsageMetrics...');
         const data = await API.blockchain.getUsageMetrics(blockchain, timeframe);
-        console.log('🔍 [useUsageMetrics] API returned data:', data);
-        console.log('🔍 [useUsageMetrics] Data type:', typeof data);
-        console.log('🔍 [useUsageMetrics] Data keys:', Object.keys(data || {}));
         
         if (!data) {
-          console.error('🔍 [useUsageMetrics] API returned undefined/null data');
           // Return fallback data instead of null
           return getFallbackUsageMetrics(blockchain, timeframe);
         }
@@ -59,23 +51,13 @@ export function useUsageMetrics(blockchain: BlockchainValue, timeframe: Timefram
         const missingFields = requiredFields.filter(field => !(field in data));
         
         if (missingFields.length > 0) {
-          console.error('🔍 [useUsageMetrics] Data missing required fields:', missingFields);
-          console.log('🔍 [useUsageMetrics] Available fields:', Object.keys(data));
           // Return fallback data instead of null
           return getFallbackUsageMetrics(blockchain, timeframe);
         }
         
-        console.log('✅ [useUsageMetrics] Data validation passed, returning:', data);
         return data;
       } catch (error) {
-        console.error('❌ [useUsageMetrics] Error fetching usage metrics:', error);
-        console.error('❌ [useUsageMetrics] Error details:', {
-          name: (error as any).name,
-          message: (error as any).message,
-          stack: (error as any).stack,
-          response: (error as any)?.response?.data,
-          status: (error as any)?.response?.status
-        });
+        console.error('Error fetching usage metrics:', error);
         // Return fallback data instead of throwing error
         return getFallbackUsageMetrics(blockchain, timeframe);
       }

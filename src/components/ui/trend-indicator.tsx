@@ -57,8 +57,6 @@ export function TrendIndicator({
   };
 
   const getStrengthDots = () => {
-    if (trend === 'stable') return null;
-    
     return (
       <div className="flex items-center space-x-1 ml-2">
         {[1, 2, 3].map((dot) => (
@@ -69,7 +67,9 @@ export function TrendIndicator({
               dot <= Math.ceil(strength * 3)
                 ? trend === 'up' 
                   ? 'bg-green-500' 
-                  : 'bg-red-500'
+                  : trend === 'down'
+                    ? 'bg-red-500'
+                    : 'bg-gray-400'
                 : 'bg-gray-300'
             )}
           />

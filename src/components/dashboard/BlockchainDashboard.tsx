@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useBlockchainStore } from '@/store/blockchainStore';
 import { useAllBlockchainData, useRealTimeUpdates } from '@/hooks/useBlockchainData';
+import { useQueryClient } from '@tanstack/react-query';
 import { memoryOptimizer, MemoryUtils } from '@/lib/memory-optimizer';
 import DashboardHeader from './header/DashboardHeader';
 import UsageMetricsSectionWithBaseline from './usage-metrics/UsageMetricsSectionWithBaseline';
@@ -33,6 +34,7 @@ export default function BlockchainDashboard({
   const { theme, setTheme } = useTheme();
   const store = useBlockchainStore();
   const { preferences, isPreferencesPanelOpen, setPreferencesPanelOpen } = useDisplayPreferences();
+  const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
   
   // Initialize store values
@@ -93,6 +95,8 @@ export default function BlockchainDashboard({
   
   // Handle refresh
   const handleRefresh = MemoryUtils.debounce(() => {
+    // Clear cache and refresh
+    queryClient.clear();
     memoryOptimizer.optimizeForScenario('data-load');
     refresh();
   }, 300);

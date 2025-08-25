@@ -81,6 +81,16 @@ export interface TVLMetrics extends BaseEntity {
   protocolCategories: { [category: string]: number };
   tvlHistory: TVLHistoryPoint[];
   marketComparison: TVLMarketComparison;
+  spikeDetection: {
+    chainTVL: SpikeDetectionResult;
+    chainTVLChange24h: SpikeDetectionResult;
+    chainTVLChange7d: SpikeDetectionResult;
+    chainTVLChange30d: SpikeDetectionResult;
+    tvlDominance: SpikeDetectionResult;
+    tvlRank: SpikeDetectionResult;
+    tvlPeak: SpikeDetectionResult;
+    tvlToMarketCapRatio: SpikeDetectionResult;
+  };
 }
 
 export interface TVLProtocol {
@@ -193,6 +203,12 @@ export interface CashflowMetrics extends BaseEntity {
     stakingTrends: TrendData[];
     miningEfficiency: EfficiencyData;
   };
+  spikeDetection: {
+    bridgeFlows: SpikeDetectionResult;
+    exchangeFlows: SpikeDetectionResult;
+    stakingMetrics: SpikeDetectionResult;
+    miningValidation: SpikeDetectionResult;
+  };
 }
 
 // TVL Metrics Types
@@ -230,6 +246,22 @@ export interface TVLMetrics extends BaseEntity {
     concentration: TVLConcentration;
     correlations: TVLCorrelations;
     historicalData: HistoricalDataPoint[];
+  };
+  spikeDetection: {
+    chainTVL: SpikeDetectionResult;
+    chainTVLChange24h: SpikeDetectionResult;
+    chainTVLChange7d: SpikeDetectionResult;
+    chainTVLChange30d: SpikeDetectionResult;
+    tvlDominance: SpikeDetectionResult;
+    tvlRank: SpikeDetectionResult;
+    tvlPeak: SpikeDetectionResult;
+    tvlToMarketCapRatio: SpikeDetectionResult;
+    defiTVL: SpikeDetectionResult;
+    stakingTVL: SpikeDetectionResult;
+    bridgeTVL: SpikeDetectionResult;
+    lendingTVL: SpikeDetectionResult;
+    dexTVL: SpikeDetectionResult;
+    yieldTVL: SpikeDetectionResult;
   };
 }
 

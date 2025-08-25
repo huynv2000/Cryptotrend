@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, Settings } from 'lucide-react';
 import { cn, formatNumber, formatCurrency, formatPercent, formatHashRate, formatFinancialValue, getValueHierarchy } from '@/lib/utils';
 import { TrendIndicator } from '@/components/ui/trend-indicator';
+import SpikeWarningSimple from './SpikeWarningSimple';
 
 interface MetricData {
   value: number | null;
@@ -174,12 +175,6 @@ export default function MetricCardWithBaseline({
                 <Settings className="h-3 w-3" />
               </Button>
             )}
-            {data.isSpike && (
-              <Badge variant="destructive" className="text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Spike
-              </Badge>
-            )}
             <div className={cn("flex items-center space-x-1", getTrendColor())}>
               {getTrendIcon()}
               <span className="text-xs font-medium">
@@ -214,7 +209,13 @@ export default function MetricCardWithBaseline({
         )}
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="relative">
+        <SpikeWarningSimple
+          isSpike={data.isSpike || false}
+          severity={data.spikeSeverity}
+          className="z-[998]"
+        />
+        
         <div className="space-y-4">
           {/* Current Value with Hierarchy */}
           <div className="space-y-2">
@@ -257,15 +258,6 @@ export default function MetricCardWithBaseline({
               size="sm"
               className="text-xs"
             />
-            
-            {data.isSpike && (
-              <div className="flex items-center space-x-1">
-                <AlertTriangle className="h-3 w-3 text-orange-500" />
-                <span className="text-xs text-orange-500 font-medium">
-                  {data.spikeSeverity} spike
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </CardContent>
