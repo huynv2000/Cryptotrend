@@ -7,15 +7,15 @@ import { cacheService } from '@/lib/cache-service';
 
 interface UseOptimizedTVLHistoryOptions {
   coinId: string;
-  timeframe?: '24H' | '7D' | '30D' | '90D';
-  enabled?: boolean;
-  refetchInterval?: number;
-  autoRefresh?: boolean;
-  forceRefresh?: boolean;
-  includeMovingAverage?: boolean;
-  includeMetrics?: boolean;
-  onSuccess?: (data: OptimizedTVLData) => void;
-  onError?: (error: Error) => void;
+  timeframe?: '24H' | '7D' | '30D' | '90D' | undefined;
+  enabled?: boolean | undefined;
+  refetchInterval?: number | undefined;
+  autoRefresh?: boolean | undefined;
+  forceRefresh?: boolean | undefined;
+  includeMovingAverage?: boolean | undefined;
+  includeMetrics?: boolean | undefined;
+  onSuccess?: ((data: OptimizedTVLData) => void) | undefined;
+  onError?: ((error: Error) => void) | undefined;
 }
 
 interface UseOptimizedTVLHistoryReturn {

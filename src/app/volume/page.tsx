@@ -198,7 +198,7 @@ export default function VolumeAnalysis() {
                     tick={{ fill: '#666' }}
                   />
                   <Tooltip 
-                    formatter={(value) => {
+                    formatter={(value, name) => {
                       if (name === 'volume') {
                         return [`$${(Number(value) / 1000000000).toFixed(2)}B`, 'Khối lượng'];
                       } else if (name === 'price') {
@@ -206,7 +206,7 @@ export default function VolumeAnalysis() {
                       } else if (name === 'movingAverage') {
                         return [`$${Number(value).toLocaleString()}`, 'MA 30 ngày'];
                       }
-                      return [value, name];
+                      return [String(value), String(name)];
                     }}
                     labelFormatter={(label) => `Ngày: ${label}`}
                     contentStyle={{

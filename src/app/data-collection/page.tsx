@@ -197,7 +197,6 @@ export default function DataCollectionPage() {
             lastUpdate: new Date(),
             dataPoints: Object.keys(data.price || {}).length,
             errorRate: 0, // No mock data - real error rate from system metrics
-            lastError: null, // No mock data - real error from system logs
             consecutiveErrors: 0, // No mock data - real count from system
           },
           {
@@ -207,7 +206,6 @@ export default function DataCollectionPage() {
             lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.technical || {}).length,
             errorRate: 0, // No mock data - real error rate from system metrics
-            lastError: null, // No mock data - real error from system logs
             consecutiveErrors: 0, // No mock data - real count from system
           },
           {
@@ -217,7 +215,6 @@ export default function DataCollectionPage() {
             lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.onchain || {}).length,
             errorRate: 0, // No mock data - real error rate from system metrics
-            lastError: null, // No mock data - real error from system logs
             consecutiveErrors: 0, // No mock data - real count from system
           },
           {
@@ -227,7 +224,6 @@ export default function DataCollectionPage() {
             lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.sentiment || {}).length,
             errorRate: 0, // No mock data - real error rate from system metrics
-            lastError: null, // No mock data - real error from system logs
             consecutiveErrors: 0, // No mock data - real count from system
           },
           {
@@ -237,16 +233,15 @@ export default function DataCollectionPage() {
             lastUpdate: null, // No mock data - real timestamp from actual updates
             dataPoints: Object.keys(data.derivatives || {}).length,
             errorRate: 0, // No mock data - real error rate from system metrics
-            lastError: null, // No mock data - real error from system logs
             consecutiveErrors: 0, // No mock data - real count from system
           }
         ];
         
         // Update status based on error rates and consecutive errors
         sources.forEach(source => {
-          if (source.errorRate > 10 || source.consecutiveErrors > 3) {
+          if (source.errorRate > 10 || (source.consecutiveErrors && source.consecutiveErrors > 3)) {
             source.status = 'error';
-          } else if (source.errorRate > 5 || source.consecutiveErrors > 1) {
+          } else if (source.errorRate > 5 || (source.consecutiveErrors && source.consecutiveErrors > 1)) {
             source.status = 'inactive';
           }
         });
@@ -860,7 +855,7 @@ export default function DataCollectionPage() {
                             <div>
                               <span className="font-medium">Sự đồng thuận:</span>
                               <div className="mt-1">
-                                {aiAnalysis.every(a => a.recommendation === aiAnalysis[0].recommendation) ? (
+                                {aiAnalysis.length > 0 && aiAnalysis.every((a, index) => index === 0 || a.recommendation === (aiAnalysis[0]?.recommendation || '')) ? (
                                   <Badge className="bg-green-100 text-green-800">Cao</Badge>
                                 ) : (
                                   <Badge className="bg-yellow-100 text-yellow-800">Trung bình</Badge>

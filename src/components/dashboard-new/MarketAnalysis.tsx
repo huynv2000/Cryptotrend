@@ -69,17 +69,15 @@ export function MarketAnalysis({
   cashFlowAnalysis,
   aiRecommendations
 }: MarketAnalysisProps) {
-  const formatCurrency = (value: number | null | undefined) => {
-    if (value === null || value === undefined || isNaN(value)) return 'N/A';
-    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
-    return `$${value.toFixed(2)}`;
+  const formatCurrency = (value: number) => {
+    if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`;
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
+    return `$${value.toFixed(0)}`;
   };
 
-  const formatPercent = (value: number | null | undefined) => {
-    if (value === null || value === undefined || isNaN(value)) return 'N/A';
+  const formatPercent = (value: number) => {
     return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
@@ -197,9 +195,9 @@ export function MarketAnalysis({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {marketOverview.btcDominance != null ? marketOverview.btcDominance.toFixed(1) + '%' : 'N/A'}
+                  {marketOverview.btcDominance.toFixed(1)}%
                 </div>
-                <Progress value={marketOverview.btcDominance || 0} className="mt-2" />
+                <Progress value={marketOverview.btcDominance} className="mt-2" />
               </CardContent>
             </Card>
 
@@ -213,9 +211,9 @@ export function MarketAnalysis({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {marketOverview.ethDominance != null ? marketOverview.ethDominance.toFixed(1) + '%' : 'N/A'}
+                  {marketOverview.ethDominance.toFixed(1)}%
                 </div>
-                <Progress value={marketOverview.ethDominance || 0} className="mt-2" />
+                <Progress value={marketOverview.ethDominance} className="mt-2" />
               </CardContent>
             </Card>
           </div>
@@ -237,7 +235,7 @@ export function MarketAnalysis({
                         {gainer.symbol}
                       </span>
                       <Badge className="bg-green-100 text-green-800">
-                        {gainer.change != null ? '+' + gainer.change.toFixed(2) + '%' : 'N/A'}
+                        +{gainer.change.toFixed(2)}%
                       </Badge>
                     </div>
                   ))}
@@ -260,7 +258,7 @@ export function MarketAnalysis({
                         {loser.symbol}
                       </span>
                       <Badge className="bg-red-100 text-red-800">
-                        {loser.change != null ? loser.change.toFixed(2) + '%' : 'N/A'}
+                        {loser.change.toFixed(2)}%
                       </Badge>
                     </div>
                   ))}
@@ -316,7 +314,7 @@ export function MarketAnalysis({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {growthAnalysis.userAcquisition != null ? growthAnalysis.userAcquisition.toFixed(0) : 'N/A'}
+                  {growthAnalysis.userAcquisition.toFixed(0)}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   New users (7D)
@@ -333,7 +331,7 @@ export function MarketAnalysis({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {growthAnalysis.retentionRate != null ? growthAnalysis.retentionRate.toFixed(1) + '%' : 'N/A'}
+                  {growthAnalysis.retentionRate.toFixed(1)}%
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   30-day retention

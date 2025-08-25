@@ -147,12 +147,12 @@ export default function TVLHistoryChartOptimized({
               <BarChart3 className="h-5 w-5 text-blue-500" />
               <span>TVL History - {coinName || coinId}</span>
             </div>
-            <LoadingState text="Loading TVL data..." />
+            <LoadingState message="Loading TVL data..." />
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div style={{ height }} className="flex items-center justify-center">
-            <LoadingState text="Preparing chart..." />
+            <LoadingState message="Preparing chart..." />
           </div>
         </CardContent>
       </Card>
@@ -233,9 +233,9 @@ export default function TVLHistoryChartOptimized({
           <div className="text-center">
             <div className={cn(
               "text-lg font-semibold",
-              stats.change24h != null && stats.change24h >= 0 ? "text-green-600" : "text-red-600"
+              stats.change24h >= 0 ? "text-green-600" : "text-red-600"
             )}>
-              {stats.change24h != null ? (stats.change24h >= 0 ? '+' : '') + stats.change24h.toFixed(2) + '%' : 'N/A'}
+              {stats.change24h >= 0 ? '+' : ''}{stats.change24h.toFixed(2)}%
             </div>
             <div className="text-xs text-muted-foreground">24h Change</div>
           </div>
@@ -253,7 +253,9 @@ export default function TVLHistoryChartOptimized({
           </div>
           <div className="text-center">
             <div className="text-lg font-semibold text-orange-600">
-              {stats.volatility != null ? stats.volatility.toFixed(1) + '%' : 'N/A'}
+              {stats.volatility !== null && stats.volatility !== undefined 
+                ? `${Number(stats.volatility).toFixed(1)}%` 
+                : 'N/A'}
             </div>
             <div className="text-xs text-muted-foreground">Volatility</div>
           </div>
@@ -333,9 +335,9 @@ export default function TVLHistoryChartOptimized({
                         <div className="text-sm text-muted-foreground">Distance from MA</div>
                         <div className={cn(
                           "text-lg font-semibold",
-                          metrics.distanceFromMA != null && metrics.distanceFromMA >= 0 ? "text-green-600" : "text-red-600"
+                          metrics.distanceFromMA >= 0 ? "text-green-600" : "text-red-600"
                         )}>
-                          {metrics.distanceFromMA != null ? (metrics.distanceFromMA >= 0 ? '+' : '') + metrics.distanceFromMA.toFixed(2) + '%' : 'N/A'}
+                          {metrics.distanceFromMA >= 0 ? '+' : ''}{metrics.distanceFromMA.toFixed(2)}%
                         </div>
                       </div>
                       <div>
@@ -388,7 +390,7 @@ export default function TVLHistoryChartOptimized({
                     <div>
                       <div className="text-sm text-muted-foreground">Signal Strength</div>
                       <div className="text-lg font-semibold">
-                        {analysis.strength != null ? analysis.strength.toFixed(0) + '%' : 'N/A'}
+                        {analysis.strength.toFixed(0)}%
                       </div>
                     </div>
                     <div>
@@ -400,7 +402,9 @@ export default function TVLHistoryChartOptimized({
                     <div>
                       <div className="text-sm text-muted-foreground">Volatility</div>
                       <div className="text-lg font-semibold text-orange-600">
-                        {stats.volatility != null ? stats.volatility.toFixed(1) + '%' : 'N/A'}
+                        {stats.volatility !== null && stats.volatility !== undefined 
+                          ? `${Number(stats.volatility).toFixed(1)}%` 
+                          : 'N/A'}
                       </div>
                     </div>
                   </div>

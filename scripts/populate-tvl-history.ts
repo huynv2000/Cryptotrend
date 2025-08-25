@@ -48,7 +48,7 @@ async function populateTVLHistory() {
         const dominance = 40 + Math.random() * 20; // 40-60% range
         
         historicalData.push({
-          date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          date: (date.toISOString().split('T')[0] as string), // Format as YYYY-MM-DD
           tvl,
           dominance
         });

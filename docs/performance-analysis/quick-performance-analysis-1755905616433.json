@@ -1,0 +1,241 @@
+{
+  "timestamp": "2025-08-22T23:33:35.972Z",
+  "analysis": {
+    "system": {
+      "nodeVersion": "v22.18.0",
+      "platform": "linux",
+      "arch": "x64",
+      "cpus": 4,
+      "totalMemory": 8562421760,
+      "freeMemory": 6959214592,
+      "memoryUsage": {
+        "rss": 50700288,
+        "heapTotal": 5865472,
+        "heapUsed": 4631576,
+        "external": 1634645,
+        "arrayBuffers": 10515
+      }
+    },
+    "project": {
+      "name": "crypto-analytics-dashboard",
+      "version": "0.1.0",
+      "scripts": [
+        "dev",
+        "build",
+        "start",
+        "lint",
+        "db:push",
+        "db:generate",
+        "db:migrate",
+        "db:reset",
+        "db:seed"
+      ],
+      "hasNextConfig": true,
+      "hasTsConfig": true,
+      "hasTailwind": true,
+      "buildDirExists": true,
+      "srcDirSize": {
+        "total": 3210824
+      },
+      "nodeModulesSize": {
+        "total": 1045298355
+      }
+    },
+    "dependencies": {
+      "total": 73,
+      "dev": 12,
+      "peer": 0,
+      "optional": 0,
+      "list": {
+        "dependencies": [
+          "@dnd-kit/core",
+          "@dnd-kit/sortable",
+          "@dnd-kit/utilities",
+          "@hookform/resolvers",
+          "@mdxeditor/editor",
+          "@prisma/client",
+          "@radix-ui/react-accordion",
+          "@radix-ui/react-alert-dialog",
+          "@radix-ui/react-aspect-ratio",
+          "@radix-ui/react-avatar",
+          "@radix-ui/react-checkbox",
+          "@radix-ui/react-collapsible",
+          "@radix-ui/react-context-menu",
+          "@radix-ui/react-dialog",
+          "@radix-ui/react-dropdown-menu",
+          "@radix-ui/react-hover-card",
+          "@radix-ui/react-label",
+          "@radix-ui/react-menubar",
+          "@radix-ui/react-navigation-menu",
+          "@radix-ui/react-popover",
+          "@radix-ui/react-progress",
+          "@radix-ui/react-radio-group",
+          "@radix-ui/react-scroll-area",
+          "@radix-ui/react-select",
+          "@radix-ui/react-separator",
+          "@radix-ui/react-slider",
+          "@radix-ui/react-slot",
+          "@radix-ui/react-switch",
+          "@radix-ui/react-tabs",
+          "@radix-ui/react-toast",
+          "@radix-ui/react-toggle",
+          "@radix-ui/react-toggle-group",
+          "@radix-ui/react-tooltip",
+          "@reactuses/core",
+          "@tanstack/react-query",
+          "@tanstack/react-table",
+          "axios",
+          "class-variance-authority",
+          "clsx",
+          "cmdk",
+          "date-fns",
+          "embla-carousel-react",
+          "esbuild",
+          "framer-motion",
+          "input-otp",
+          "lucide-react",
+          "next",
+          "next-auth",
+          "next-intl",
+          "next-themes",
+          "node-fetch",
+          "openai",
+          "react",
+          "react-day-picker",
+          "react-dom",
+          "react-hook-form",
+          "react-markdown",
+          "react-resizable-panels",
+          "react-syntax-highlighter",
+          "recharts",
+          "sharp",
+          "socket.io",
+          "socket.io-client",
+          "sonner",
+          "tailwind-merge",
+          "tailwindcss-animate",
+          "tsx",
+          "uuid",
+          "vaul",
+          "ws",
+          "z-ai-web-dev-sdk",
+          "zod",
+          "zustand"
+        ],
+        "devDependencies": [
+          "@eslint/eslintrc",
+          "@tailwindcss/postcss",
+          "@types/node",
+          "@types/react",
+          "@types/react-dom",
+          "eslint",
+          "eslint-config-next",
+          "nodemon",
+          "prisma",
+          "tailwindcss",
+          "tw-animate-css",
+          "typescript"
+        ]
+      },
+      "heavyDependencies": [],
+      "estimatedSize": "146 MB"
+    },
+    "files": {
+      "totalFiles": 296,
+      "totalSize": 3210824,
+      "fileTypes": {
+        ".ts": 140,
+        ".tsx": 150,
+        ".ico": 1,
+        ".css": 1,
+        ".backup": 2,
+        ".20250821_134936": 1,
+        ".20250821_135927": 1
+      },
+      "largestFiles": [
+        {
+          "path": "/src/components/dashboard/EnhancedMultiLayerDashboard.tsx",
+          "size": 68022,
+          "sizeFormatted": "66.43 KB"
+        },
+        {
+          "path": "/src/app/favicon.ico",
+          "size": 67646,
+          "sizeFormatted": "66.06 KB"
+        },
+        {
+          "path": "/src/lib/data-collector.ts",
+          "size": 50403,
+          "sizeFormatted": "49.22 KB"
+        },
+        {
+          "path": "/src/lib/enhanced-ai-analysis-service.ts",
+          "size": 48855,
+          "sizeFormatted": "47.71 KB"
+        },
+        {
+          "path": "/src/app/data-collection/page.tsx",
+          "size": 42748,
+          "sizeFormatted": "41.75 KB"
+        },
+        {
+          "path": "/src/components/DebugTab.tsx",
+          "size": 40384,
+          "sizeFormatted": "39.44 KB"
+        },
+        {
+          "path": "/src/app/page.tsx.backup",
+          "size": 37666,
+          "sizeFormatted": "36.78 KB"
+        },
+        {
+          "path": "/src/components/ai-enhanced/EnhancedAIAnalysisPanel.tsx",
+          "size": 37092,
+          "sizeFormatted": "36.22 KB"
+        },
+        {
+          "path": "/src/app/api/v2/blockchain/ai-analysis/route.ts",
+          "size": 35699,
+          "sizeFormatted": "34.86 KB"
+        },
+        {
+          "path": "/src/components/dashboard/EnhancedAIAnalysisPanel.tsx",
+          "size": 34821,
+          "sizeFormatted": "34 KB"
+        }
+      ],
+      "componentCount": 153,
+      "serviceCount": 13,
+      "hookCount": 12
+    },
+    "performance": {}
+  },
+  "issues": [
+    {
+      "type": "MANY_COMPONENTS",
+      "severity": "LOW",
+      "message": "High number of components (153). Consider lazy loading.",
+      "impact": "Bundle size, initial load time"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "MEDIUM",
+      "title": "Next.js Optimization",
+      "description": "Enable SWC compiler, webpack caching, and production optimizations",
+      "estimatedImpact": "25-35% build time improvement"
+    },
+    {
+      "priority": "MEDIUM",
+      "title": "TypeScript Optimization",
+      "description": "Enable incremental compilation and optimize project references",
+      "estimatedImpact": "30-40% compilation speed improvement"
+    },
+    {
+      "priority": "MEDIUM",
+      "title": "Multi-Layer Caching",
+      "description": "Implement memory cache, Redis cache, and CDN integration",
+      "estimatedImpact": "60-80% response time improvement"
+    }
+  ]
+}

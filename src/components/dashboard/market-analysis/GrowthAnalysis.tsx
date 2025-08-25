@@ -160,7 +160,7 @@ export default function GrowthAnalysis({ marketData, aiData, isLoading }: Growth
                     {aiData.sentiment === 'bullish' ? 'Positive Growth Trajectory' : 'Growth Concerns Detected'}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Confidence: {(aiData.confidence * 100).toFixed(1)}%
+                    Confidence: {aiData.confidence !== null && aiData.confidence !== undefined ? `${(aiData.confidence * 100).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
               </div>

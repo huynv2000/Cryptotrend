@@ -1,6 +1,6 @@
 // server.ts - Next.js Standalone + Socket.IO
 import { setupSocket } from '@/lib/socket';
-import { dataCollector } from '@/lib/index';
+import { dataCollector } from '@/lib/data-collector';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import next from 'next';
@@ -17,7 +17,7 @@ async function createCustomServer() {
       dev,
       dir: process.cwd(),
       // In production, use the current directory where .next is located
-      conf: dev ? undefined : { distDir: './.next' }
+      conf: dev ? (null as any) : { distDir: './.next' }
     });
 
     await nextApp.prepare();

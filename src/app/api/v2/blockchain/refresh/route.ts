@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
     
     // Simulate API calls to external services
     const refreshTasks = [
-      refreshPriceData(crypto.id),
-      refreshOnChainData(crypto.id),
-      refreshTechnicalData(crypto.id),
+      refreshPriceData(Number(crypto.id)),
+      refreshOnChainData(Number(crypto.id)),
+      refreshTechnicalData(Number(crypto.id)),
       refreshSentimentData(),
-      refreshDerivativesData(crypto.id)
+      refreshDerivativesData(Number(crypto.id))
     ];
 
     const results = await Promise.allSettled(refreshTasks);
@@ -64,20 +64,20 @@ export async function POST(request: NextRequest) {
         : `${successfulTasks}/${totalTasks} data sources refreshed`,
       
       details: {
-        priceData: results[0].status === 'fulfilled',
-        onChainData: results[1].status === 'fulfilled',
-        technicalData: results[2].status === 'fulfilled',
-        sentimentData: results[3].status === 'fulfilled',
-        derivativesData: results[4].status === 'fulfilled'
+        priceData: (results[0] && results[0].status) === 'fulfilled',
+        onChainData: (results[1] && results[1].status) === 'fulfilled',
+        technicalData: (results[2] && results[2].status) === 'fulfilled',
+        sentimentData: (results[3] && results[3].status) === 'fulfilled',
+        derivativesData: (results[4] && results[4].status) === 'fulfilled'
       },
       
       nextRefresh: new Date(refreshEnd.getTime() + 5 * 60 * 1000), // Next refresh in 5 minutes
       dataFreshness: {
-        priceData: await getDataFreshness('price', crypto.id),
-        onChainData: await getDataFreshness('onchain', crypto.id),
-        technicalData: await getDataFreshness('technical', crypto.id),
-        sentimentData: await getDataFreshness('sentiment', crypto.id),
-        derivativesData: await getDataFreshness('derivatives', crypto.id)
+        priceData: await getDataFreshness('price', Number(crypto.id)),
+        onChainData: await getDataFreshness('onchain', Number(crypto.id)),
+        technicalData: await getDataFreshness('technical', Number(crypto.id)),
+        sentimentData: await getDataFreshness('sentiment', Number(crypto.id)),
+        derivativesData: await getDataFreshness('derivatives', Number(crypto.id))
       }
     };
 
@@ -101,7 +101,7 @@ async function refreshPriceData(cryptoId: number): Promise<void> {
   // For now, we'll just update the timestamp to simulate refresh
   
   const latestPrice = await db.priceHistory.findFirst({
-    where: { cryptoId },
+    where: { cryptoId: String(cryptoId) },
     orderBy: { timestamp: 'desc' }
   });
 
@@ -112,10 +112,10 @@ async function refreshPriceData(cryptoId: number): Promise<void> {
     
     await db.priceHistory.create({
       data: {
-        cryptoId,
+        cryptoId: String(cryptoId),
         price: newPrice,
-        volume24h: latestPrice.volume24h * (0.95 + Math.random() * 0.1),
-        marketCap: newPrice * (latestPrice.marketCap / latestPrice.price),
+        volume24h: (latestPrice.volume24h || 0) * (0.95 + Math.random() * 0.1),
+        marketCap: newPrice * ((latestPrice.marketCap || 0) / (latestPrice.price || 1)),
         priceChange24h: priceChange * 100,
         timestamp: new Date()
       }
@@ -129,7 +129,7 @@ async function refreshOnChainData(cryptoId: number): Promise<void> {
   
   // Simulate on-chain data refresh
   const latestOnChain = await db.onChainMetric.findFirst({
-    where: { cryptoId },
+    where: { cryptoId: String(cryptoId) },
     orderBy: { timestamp: 'desc' }
   });
 
@@ -137,18 +137,18 @@ async function refreshOnChainData(cryptoId: number): Promise<void> {
     // Simulate small changes in on-chain metrics
     await db.onChainMetric.create({
       data: {
-        cryptoId,
-        mvrv: latestOnChain.mvrv * (0.98 + Math.random() * 0.04),
-        nupl: latestOnChain.nupl * (0.95 + Math.random() * 0.1),
-        sopr: latestOnChain.sopr * (0.99 + Math.random() * 0.02),
-        activeAddresses: Math.floor(latestOnChain.activeAddresses * (0.9 + Math.random() * 0.2)),
-        exchangeInflow: latestOnChain.exchangeInflow * (0.9 + Math.random() * 0.2),
-        exchangeOutflow: latestOnChain.exchangeOutflow * (0.9 + Math.random() * 0.2),
-        transactionVolume: latestOnChain.transactionVolume * (0.9 + Math.random() * 0.2),
-        supplyDistribution: latestOnChain.supplyDistribution,
-        whaleHoldingsPercentage: latestOnChain.whaleHoldingsPercentage * (0.98 + Math.random() * 0.04),
-        retailHoldingsPercentage: latestOnChain.retailHoldingsPercentage * (0.98 + Math.random() * 0.04),
-        exchangeHoldingsPercentage: latestOnChain.exchangeHoldingsPercentage * (0.98 + Math.random() * 0.04),
+        cryptoId: String(cryptoId),
+        mvrv: (latestOnChain.mvrv || 0) * (0.98 + Math.random() * 0.04),
+        nupl: (latestOnChain.nupl || 0) * (0.95 + Math.random() * 0.1),
+        sopr: (latestOnChain.sopr || 1) * (0.99 + Math.random() * 0.02),
+        activeAddresses: Math.floor((latestOnChain.activeAddresses || 0) * (0.9 + Math.random() * 0.2)),
+        exchangeInflow: (latestOnChain.exchangeInflow || 0) * (0.9 + Math.random() * 0.2),
+        exchangeOutflow: (latestOnChain.exchangeOutflow || 0) * (0.9 + Math.random() * 0.2),
+        transactionVolume: (latestOnChain.transactionVolume || 0) * (0.9 + Math.random() * 0.2),
+        supplyDistribution: latestOnChain.supplyDistribution || 0,
+        whaleHoldingsPercentage: (latestOnChain.whaleHoldingsPercentage || 0) * (0.98 + Math.random() * 0.04),
+        retailHoldingsPercentage: (latestOnChain.retailHoldingsPercentage || 0) * (0.98 + Math.random() * 0.04),
+        exchangeHoldingsPercentage: (latestOnChain.exchangeHoldingsPercentage || 0) * (0.98 + Math.random() * 0.04),
         timestamp: new Date()
       }
     });
@@ -161,7 +161,7 @@ async function refreshTechnicalData(cryptoId: number): Promise<void> {
   
   // Get latest price data for technical calculations
   const recentPrices = await db.priceHistory.findMany({
-    where: { cryptoId },
+    where: { cryptoId: String(cryptoId) },
     orderBy: { timestamp: 'desc' },
     take: 50
   });
@@ -184,7 +184,7 @@ async function refreshTechnicalData(cryptoId: number): Promise<void> {
     
     await db.technicalIndicator.create({
       data: {
-        cryptoId,
+        cryptoId: String(cryptoId),
         rsi,
         ma50,
         ma200,
@@ -211,29 +211,14 @@ async function refreshSentimentData(): Promise<void> {
   if (latestSentiment) {
     // Simulate changes in sentiment metrics
     const fearGreedChange = (Math.random() - 0.5) * 10; // ±5 change
-    const newFearGreed = Math.max(0, Math.min(100, latestSentiment.fearGreedIndex + fearGreedChange));
+    const newFearGreed = Math.max(0, Math.min(100, (latestSentiment.fearGreedIndex || 50) + fearGreedChange));
     
     await db.sentimentMetric.create({
       data: {
         fearGreedIndex: newFearGreed,
-        fearGreedClassification: getFearGreedClassification(newFearGreed),
-        socialSentiment: Math.max(-1, Math.min(1, latestSentiment.socialSentiment + (Math.random() - 0.5) * 0.2)),
-        redditSentiment: Math.max(-1, Math.min(1, latestSentiment.redditSentiment + (Math.random() - 0.5) * 0.2)),
-        socialVolume: Math.floor(latestSentiment.socialVolume * (0.8 + Math.random() * 0.4)),
-        engagementRate: Math.max(0, Math.min(1, latestSentiment.engagementRate + (Math.random() - 0.5) * 0.1)),
-        influencerSentiment: Math.max(-1, Math.min(1, latestSentiment.influencerSentiment + (Math.random() - 0.5) * 0.2)),
-        trendingScore: Math.max(0, Math.min(100, latestSentiment.trendingScore + (Math.random() - 0.5) * 10)),
-        newsSentiment: Math.max(-1, Math.min(1, latestSentiment.newsSentiment + (Math.random() - 0.5) * 0.2)),
-        newsVolume: Math.floor(latestSentiment.newsVolume * (0.8 + Math.random() * 0.4)),
-        positiveNewsCount: Math.floor(latestSentiment.positiveNewsCount * (0.8 + Math.random() * 0.4)),
-        negativeNewsCount: Math.floor(latestSentiment.negativeNewsCount * (0.8 + Math.random() * 0.4)),
-        neutralNewsCount: Math.floor(latestSentiment.neutralNewsCount * (0.8 + Math.random() * 0.4)),
-        sentimentScore: Math.max(-1, Math.min(1, latestSentiment.sentimentScore + (Math.random() - 0.5) * 0.2)),
-        buzzScore: Math.max(0, Math.min(100, latestSentiment.buzzScore + (Math.random() - 0.5) * 10)),
-        trendsScore: Math.max(0, Math.min(100, latestSentiment.trendsScore + (Math.random() - 0.5) * 10)),
-        searchVolume: Math.floor(latestSentiment.searchVolume * (0.8 + Math.random() * 0.4)),
-        trendingKeywords: latestSentiment.trendingKeywords,
-        trendDirection: Math.random() > 0.5 ? 'up' : 'down',
+        socialSentiment: Math.max(-1, Math.min(1, (latestSentiment.socialSentiment || 0) + (Math.random() - 0.5) * 0.2)),
+        newsSentiment: Math.max(-1, Math.min(1, (latestSentiment.newsSentiment || 0) + (Math.random() - 0.5) * 0.2)),
+        googleTrends: Math.max(0, Math.min(100, (latestSentiment.googleTrends || 50) + (Math.random() - 0.5) * 10)),
         timestamp: new Date()
       }
     });
@@ -246,7 +231,7 @@ async function refreshDerivativesData(cryptoId: number): Promise<void> {
   
   // Simulate derivatives data refresh
   const latestDerivatives = await db.derivativeMetric.findFirst({
-    where: { cryptoId },
+    where: { cryptoId: String(cryptoId) },
     orderBy: { timestamp: 'desc' }
   });
 
@@ -254,11 +239,11 @@ async function refreshDerivativesData(cryptoId: number): Promise<void> {
     // Simulate changes in derivatives metrics
     await db.derivativeMetric.create({
       data: {
-        cryptoId,
-        openInterest: latestDerivatives.openInterest * (0.95 + Math.random() * 0.1),
-        fundingRate: Math.max(-0.05, Math.min(0.05, latestDerivatives.fundingRate + (Math.random() - 0.5) * 0.01)),
-        liquidationVolume: latestDerivatives.liquidationVolume * (0.8 + Math.random() * 0.4),
-        putCallRatio: Math.max(0.1, Math.min(5, latestDerivatives.putCallRatio * (0.9 + Math.random() * 0.2))),
+        cryptoId: String(cryptoId),
+        openInterest: (latestDerivatives.openInterest || 0) * (0.95 + Math.random() * 0.1),
+        fundingRate: Math.max(-0.05, Math.min(0.05, (latestDerivatives.fundingRate || 0) + (Math.random() - 0.5) * 0.01)),
+        liquidationVolume: (latestDerivatives.liquidationVolume || 0) * (0.8 + Math.random() * 0.4),
+        putCallRatio: Math.max(0.1, Math.min(5, (latestDerivatives.putCallRatio || 1) * (0.9 + Math.random() * 0.2))),
         timestamp: new Date()
       }
     });
@@ -273,7 +258,7 @@ function calculateRSI(prices: number[]): number {
   const losses: number[] = [];
   
   for (let i = 1; i < prices.length; i++) {
-    const change = prices[i] - prices[i-1];
+    const change = (prices[i] || 0) - (prices[i-1] || 0);
     if (change > 0) {
       gains.push(change);
       losses.push(0);
@@ -318,10 +303,10 @@ function calculateEMA(prices: number[], period: number): number {
   if (prices.length < period) return prices[prices.length - 1] || 0;
   
   const multiplier = 2 / (period + 1);
-  let ema = prices[0];
+  let ema = prices[0] || 0;
   
   for (let i = 1; i < prices.length; i++) {
-    ema = (prices[i] - ema) * multiplier + ema;
+    ema = ((prices[i] || 0) - ema) * multiplier + ema;
   }
   
   return ema;
@@ -365,7 +350,7 @@ async function getDataFreshness(dataType: string, cryptoId: number): Promise<{
   switch (dataType) {
     case 'price':
       const priceData = await db.priceHistory.findFirst({
-        where: { cryptoId },
+        where: { cryptoId: String(cryptoId) },
         orderBy: { timestamp: 'desc' }
       });
       lastUpdate = priceData?.timestamp || null;
@@ -373,7 +358,7 @@ async function getDataFreshness(dataType: string, cryptoId: number): Promise<{
       
     case 'onchain':
       const onChainData = await db.onChainMetric.findFirst({
-        where: { cryptoId },
+        where: { cryptoId: String(cryptoId) },
         orderBy: { timestamp: 'desc' }
       });
       lastUpdate = onChainData?.timestamp || null;
@@ -381,7 +366,7 @@ async function getDataFreshness(dataType: string, cryptoId: number): Promise<{
       
     case 'technical':
       const technicalData = await db.technicalIndicator.findFirst({
-        where: { cryptoId },
+        where: { cryptoId: String(cryptoId) },
         orderBy: { timestamp: 'desc' }
       });
       lastUpdate = technicalData?.timestamp || null;
@@ -396,7 +381,7 @@ async function getDataFreshness(dataType: string, cryptoId: number): Promise<{
       
     case 'derivatives':
       const derivativesData = await db.derivativeMetric.findFirst({
-        where: { cryptoId },
+        where: { cryptoId: String(cryptoId) },
         orderBy: { timestamp: 'desc' }
       });
       lastUpdate = derivativesData?.timestamp || null;

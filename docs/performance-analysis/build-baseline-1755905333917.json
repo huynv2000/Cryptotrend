@@ -1,0 +1,274 @@
+{
+  "timestamp": "2025-08-22T23:26:59.070Z",
+  "system": {
+    "nodeVersion": "v22.18.0",
+    "platform": "linux",
+    "arch": "x64",
+    "memoryUsage": {
+      "rss": 48246784,
+      "heapTotal": 5603328,
+      "heapUsed": 4508936,
+      "external": 1625306,
+      "arrayBuffers": 10515
+    },
+    "cpus": 4,
+    "project": {
+      "name": "crypto-analytics-dashboard",
+      "version": "0.1.0",
+      "dependencies": 73,
+      "devDependencies": 12,
+      "scripts": [
+        "dev",
+        "build",
+        "start",
+        "lint",
+        "db:push",
+        "db:generate",
+        "db:migrate",
+        "db:reset",
+        "db:seed"
+      ]
+    },
+    "diskUsage": {
+      "total": 1319828744
+    }
+  },
+  "buildMetrics": {
+    "Clean Build": {
+      "executionTime": 0,
+      "success": false,
+      "error": "Command failed: npm run build\nFailed to compile.\n\n./src/lib/ai-enhanced/enhanced-ai-service.ts:606:11\nType error: Type 'ModelAccuracy' is not assignable to type 'number'.\n\n\u001b[0m \u001b[90m 604 |\u001b[39m           processingTime\u001b[33m:\u001b[39m \u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow() \u001b[33m-\u001b[39m startTime\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 605 |\u001b[39m           memoryUsage\u001b[33m:\u001b[39m process\u001b[33m.\u001b[39mmemoryUsage()\u001b[33m.\u001b[39mheapUsed\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 606 |\u001b[39m           accuracy\u001b[33m:\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mgetModelAccuracy()\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m     |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 607 |\u001b[39m           warnings\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 608 |\u001b[39m           recommendations\u001b[33m:\u001b[39m []\u001b[0m\n\u001b[0m \u001b[90m 609 |\u001b[39m         }\u001b[0m\nNext.js build worker exited with code: 1 and signal: null\n"
+    },
+    "Incremental Build": {
+      "executionTime": 0,
+      "success": false,
+      "error": "Command failed: npm run build\nFailed to compile.\n\n./src/lib/ai-enhanced/enhanced-ai-service.ts:606:11\nType error: Type 'ModelAccuracy' is not assignable to type 'number'.\n\n\u001b[0m \u001b[90m 604 |\u001b[39m           processingTime\u001b[33m:\u001b[39m \u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow() \u001b[33m-\u001b[39m startTime\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 605 |\u001b[39m           memoryUsage\u001b[33m:\u001b[39m process\u001b[33m.\u001b[39mmemoryUsage()\u001b[33m.\u001b[39mheapUsed\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 606 |\u001b[39m           accuracy\u001b[33m:\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mgetModelAccuracy()\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m     |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 607 |\u001b[39m           warnings\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 608 |\u001b[39m           recommendations\u001b[33m:\u001b[39m []\u001b[0m\n\u001b[0m \u001b[90m 609 |\u001b[39m         }\u001b[0m\nNext.js build worker exited with code: 1 and signal: null\n"
+    },
+    "Development Server Start": {
+      "executionTime": 10014.888292999996,
+      "memoryBefore": {
+        "rss": 62066688,
+        "heapTotal": 9797632,
+        "heapUsed": 6191896,
+        "external": 1645353,
+        "arrayBuffers": 13703
+      },
+      "memoryAfter": {
+        "rss": 62087168,
+        "heapTotal": 9797632,
+        "heapUsed": 6231808,
+        "external": 1648168,
+        "arrayBuffers": 16518
+      },
+      "memoryDelta": {
+        "rss": 20480,
+        "heapUsed": 39912,
+        "heapTotal": 0
+      },
+      "success": true,
+      "output": "\n> crypto-analytics-dashboard@0.1.0 dev\n> nodemon --exec \"npx tsx server.ts\" --watch server.ts --watch src --ext ts,tsx,js,jsx 2>&1 | tee dev.log\n\n\u001b[33m[nodemon] 3.1.10\u001b[39m\n\u001b[33m[nodemon] to restart at any time, enter `rs`\u001b[39m\n\u001b[33m[nodemon] watching path(s): server.ts src/**/*\u001b[39m\n\u001b[33m[nodemon] watching extensions: ts,tsx,js,jsx\u001b[39m\n\u001b[32m[nodemon] starting `npx tsx server.ts`\u001b[39m\n🔄 Smart Rate Limiter started processing queues\n🚀 Initializing AI/ML systems...\nInitializing AI/ML anomaly detection system...\nprisma:query SELECT `main`.`cryptocurrencies`.`id`, `main`.`cryptocurrencies`.`symbol`, `main`.`cryptocurrencies`.`name`, `main`.`cryptocurrencies`.`coinGeckoId`, `main`.`cryptocurrencies`.`logo`, `main`.`cryptocurrencies`.`rank`, `main`.`cryptocurrencies`.`isActive`, `main`.`cryptocurrencies`.`isDefault`, `main`.`cryptocurrencies`.`addedBy`, `main`.`cryptocurrencies`.`createdAt`, `main`.`cryptocurrencies`.`updatedAt` FROM `main`.`cryptocurrencies` WHERE `main`.`cryptocurrencie..."
+    }
+  },
+  "bundleAnalysis": {
+    "chunks": [
+      {
+        "name": "polyfills.js",
+        "size": 112594,
+        "sizeFormatted": "109.96 KB"
+      }
+    ],
+    "totalSize": 112594
+  },
+  "dependencyAnalysis": {
+    "counts": {
+      "total": 73,
+      "dev": 12,
+      "peer": 0,
+      "optional": 0
+    },
+    "sizes": [
+      {
+        "name": "@next",
+        "size": 297791213,
+        "sizeFormatted": "284 MB"
+      },
+      {
+        "name": "next",
+        "size": 127673937,
+        "sizeFormatted": "121.76 MB"
+      },
+      {
+        "name": "@prisma",
+        "size": 81421211,
+        "sizeFormatted": "77.65 MB"
+      },
+      {
+        "name": "prisma",
+        "size": 68734786,
+        "sizeFormatted": "65.55 MB"
+      },
+      {
+        "name": "@codesandbox",
+        "size": 67363751,
+        "sizeFormatted": "64.24 MB"
+      },
+      {
+        "name": "lucide-react",
+        "size": 33990289,
+        "sizeFormatted": "32.42 MB"
+      },
+      {
+        "name": "effect",
+        "size": 26271269,
+        "sizeFormatted": "25.05 MB"
+      },
+      {
+        "name": "typescript",
+        "size": 23622869,
+        "sizeFormatted": "22.53 MB"
+      },
+      {
+        "name": "date-fns",
+        "size": 22601076,
+        "sizeFormatted": "21.55 MB"
+      },
+      {
+        "name": "sharp",
+        "size": 17188047,
+        "sizeFormatted": "16.39 MB"
+      },
+      {
+        "name": "@img",
+        "size": 17077233,
+        "sizeFormatted": "16.29 MB"
+      },
+      {
+        "name": "@mdxeditor",
+        "size": 13167889,
+        "sizeFormatted": "12.56 MB"
+      },
+      {
+        "name": "esbuild",
+        "size": 10423453,
+        "sizeFormatted": "9.94 MB"
+      },
+      {
+        "name": "@esbuild",
+        "size": 10298009,
+        "sizeFormatted": "9.82 MB"
+      },
+      {
+        "name": "lightningcss",
+        "size": 9736294,
+        "sizeFormatted": "9.29 MB"
+      },
+      {
+        "name": "lightningcss-linux-x64-gnu",
+        "size": 9239476,
+        "sizeFormatted": "8.81 MB"
+      },
+      {
+        "name": "web-streams-polyfill",
+        "size": 9036205,
+        "sizeFormatted": "8.62 MB"
+      },
+      {
+        "name": "@radix-ui",
+        "size": 8032479,
+        "sizeFormatted": "7.66 MB"
+      },
+      {
+        "name": "eslint-config-next",
+        "size": 7427214,
+        "sizeFormatted": "7.08 MB"
+      },
+      {
+        "name": "react-day-picker",
+        "size": 7246355,
+        "sizeFormatted": "6.91 MB"
+      }
+    ],
+    "unused": [
+      "@eslint/eslintrc",
+      "eslint",
+      "eslint-config-next"
+    ]
+  },
+  "performance": {
+    "hmr": {
+      "averageResponseTime": 150,
+      "successRate": 0.95,
+      "testResults": [
+        {
+          "change": "Component update",
+          "time": 120,
+          "success": true
+        },
+        {
+          "change": "Style update",
+          "time": 80,
+          "success": true
+        },
+        {
+          "change": "State update",
+          "time": 200,
+          "success": true
+        }
+      ]
+    },
+    "memory": {
+      "samples": [
+        {
+          "timestamp": 1755905324485,
+          "rss": 67522560,
+          "heapTotal": 15302656,
+          "heapUsed": 6528720,
+          "external": 1642165,
+          "arrayBuffers": 10515
+        },
+        {
+          "timestamp": 1755905325485,
+          "rss": 67522560,
+          "heapTotal": 15302656,
+          "heapUsed": 6550112,
+          "external": 1642165,
+          "arrayBuffers": 10515
+        },
+        {
+          "timestamp": 1755905326486,
+          "rss": 67522560,
+          "heapTotal": 15302656,
+          "heapUsed": 6551944,
+          "external": 1642165,
+          "arrayBuffers": 10515
+        },
+        {
+          "timestamp": 1755905327488,
+          "rss": 67522560,
+          "heapTotal": 15302656,
+          "heapUsed": 6553920,
+          "external": 1642165,
+          "arrayBuffers": 10515
+        },
+        {
+          "timestamp": 1755905328489,
+          "rss": 67522560,
+          "heapTotal": 15302656,
+          "heapUsed": 6555992,
+          "external": 1642165,
+          "arrayBuffers": 10515
+        }
+      ],
+      "average": {
+        "rss": 67522560,
+        "heapUsed": 6548137.6,
+        "heapTotal": 15302656
+      }
+    },
+    "typescript": {
+      "compilationTime": 0,
+      "success": false,
+      "error": "Command failed: npx tsc --noEmit"
+    }
+  }
+}

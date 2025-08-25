@@ -21,8 +21,6 @@ export const blockchainKeys = {
     ['blockchain', 'usage-metrics', blockchain, timeframe] as const,
   tvlMetrics: (blockchain: BlockchainValue, timeframe: TimeframeValue) => 
     ['blockchain', 'tvl-metrics', blockchain, timeframe] as const,
-  enhancedTvlMetrics: (blockchain: BlockchainValue, timeframe: TimeframeValue) => 
-    ['blockchain', 'enhanced-tvl-metrics', blockchain, timeframe] as const,
   cashflowMetrics: (blockchain: BlockchainValue, timeframe: TimeframeValue) => 
     ['blockchain', 'cashflow-metrics', blockchain, timeframe] as const,
   marketOverview: (blockchain: BlockchainValue) => 
@@ -72,11 +70,11 @@ export function useUsageMetrics(blockchain: BlockchainValue, timeframe: Timefram
       } catch (error) {
         console.error('❌ [useUsageMetrics] Error fetching usage metrics:', error);
         console.error('❌ [useUsageMetrics] Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          response: error.response?.data,
-          status: error.response?.status
+          name: (error as any).name,
+          message: (error as any).message,
+          stack: (error as any).stack,
+          response: (error as any)?.response?.data,
+          status: (error as any)?.response?.status
         });
         // Return fallback data instead of throwing error
         return getFallbackUsageMetrics(blockchain, timeframe);
@@ -85,17 +83,6 @@ export function useUsageMetrics(blockchain: BlockchainValue, timeframe: Timefram
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 60 * 1000, // 1 minute
     enabled: !!blockchain,
-    onSuccess: (data) => {
-      console.log('✅ [useUsageMetrics] Query onSuccess called with:', data);
-      store.setUsageMetrics(data);
-    },
-    onError: (error) => {
-      console.error('❌ [useUsageMetrics] Query onError called:', error);
-      store.setError(`Failed to fetch usage metrics: ${error.message}`);
-    },
-    onSettled: (data, error) => {
-      console.log('🔄 [useUsageMetrics] Query onSettled called:', { data, error });
-    },
   });
 }
 
@@ -118,40 +105,6 @@ export function useTVLMetrics(blockchain: BlockchainValue, timeframe: TimeframeV
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 60 * 1000, // 1 minute
     enabled: !!blockchain,
-    onSuccess: (data) => {
-      store.setTVLMetrics(data);
-    },
-    onError: (error) => {
-      store.setError(`Failed to fetch TVL metrics: ${error.message}`);
-    },
-  });
-}
-
-// Hook for fetching enhanced TVL metrics
-export function useEnhancedTVLMetrics(blockchain: BlockchainValue, timeframe: TimeframeValue) {
-  const store = useBlockchainStore();
-  
-  return useQuery({
-    queryKey: blockchainKeys.enhancedTvlMetrics(blockchain, timeframe),
-    queryFn: async () => {
-      try {
-        const data = await API.blockchain.getEnhancedTVLMetrics(blockchain, timeframe);
-        return data;
-      } catch (error) {
-        console.error('Error fetching enhanced TVL metrics:', error);
-        // Return fallback data instead of throwing error
-        return getFallbackEnhancedTVLMetrics(blockchain, timeframe);
-      }
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    refetchInterval: 5 * 60 * 1000, // 5 minutes
-    enabled: !!blockchain,
-    onSuccess: (data) => {
-      store.setEnhancedTVLMetrics(data);
-    },
-    onError: (error) => {
-      store.setError(`Failed to fetch enhanced TVL metrics: ${error.message}`);
-    },
   });
 }
 
@@ -174,12 +127,6 @@ export function useCashflowMetrics(blockchain: BlockchainValue, timeframe: Timef
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 60 * 1000, // 1 minute
     enabled: !!blockchain,
-    onSuccess: (data) => {
-      store.setCashflowMetrics(data);
-    },
-    onError: (error) => {
-      store.setError(`Failed to fetch cashflow metrics: ${error.message}`);
-    },
   });
 }
 
@@ -202,12 +149,6 @@ export function useMarketOverview(blockchain: BlockchainValue) {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 60 * 1000, // 1 minute
     enabled: !!blockchain,
-    onSuccess: (data) => {
-      store.setMarketOverview(data);
-    },
-    onError: (error) => {
-      store.setError(`Failed to fetch market overview: ${error.message}`);
-    },
   });
 }
 
@@ -230,12 +171,6 @@ export function useAIAnalysis(blockchain: BlockchainValue) {
     staleTime: 10 * 60 * 1000, // 10 minutes
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     enabled: !!blockchain,
-    onSuccess: (data) => {
-      store.setAIAnalysis(data);
-    },
-    onError: (error) => {
-      store.setError(`Failed to fetch AI analysis: ${error.message}`);
-    },
   });
 }
 
@@ -254,13 +189,6 @@ export function useHistoricalData(
     staleTime: 15 * 60 * 1000, // 15 minutes
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     enabled: enabled && !!blockchain && !!metric,
-    onSuccess: (data) => {
-      const key = `${blockchain}-${metric}-${timeframe}`;
-      store.setHistoricalData(key, data);
-    },
-    onError: (error) => {
-      store.setError(`Failed to fetch historical data: ${error.message}`);
-    },
   });
 }
 
@@ -275,29 +203,6 @@ export function useRefreshData() {
     },
     onMutate: () => {
       store.setLoading(true);
-    },
-    onSuccess: (_, { blockchain, timeframe }) => {
-      // Invalidate all related queries
-      queryClient.invalidateQueries({ queryKey: blockchainKeys.usageMetrics(blockchain, timeframe) });
-      queryClient.invalidateQueries({ queryKey: blockchainKeys.tvlMetrics(blockchain, timeframe) });
-      queryClient.invalidateQueries({ queryKey: blockchainKeys.enhancedTvlMetrics(blockchain, timeframe) });
-      queryClient.invalidateQueries({ queryKey: blockchainKeys.cashflowMetrics(blockchain, timeframe) });
-      queryClient.invalidateQueries({ queryKey: blockchainKeys.marketOverview(blockchain) });
-      queryClient.invalidateQueries({ queryKey: blockchainKeys.aiAnalysis(blockchain) });
-      
-      store.addNotification({
-        type: 'success',
-        title: 'Data Refreshed',
-        message: 'All data has been refreshed successfully',
-      });
-    },
-    onError: (error) => {
-      store.setError(`Failed to refresh data: ${error.message}`);
-      store.addNotification({
-        type: 'error',
-        title: 'Refresh Failed',
-        message: 'Failed to refresh data. Please try again.',
-      });
     },
     onSettled: () => {
       store.setLoading(false);
@@ -328,26 +233,24 @@ export function useTVLComparison(blockchains: string[] = ['ethereum', 'bitcoin',
 export function useAllBlockchainData(blockchain: BlockchainValue, timeframe: TimeframeValue) {
   const usageMetrics = useUsageMetrics(blockchain, timeframe);
   const tvlMetrics = useTVLMetrics(blockchain, timeframe);
-  const enhancedTvlMetrics = useEnhancedTVLMetrics(blockchain, timeframe);
   const tvlComparison = useTVLComparison();
   const cashflowMetrics = useCashflowMetrics(blockchain, timeframe);
   const marketOverview = useMarketOverview(blockchain);
   const aiAnalysis = useAIAnalysis(blockchain);
   const refreshData = useRefreshData();
   
-  const isLoading = usageMetrics.isLoading || tvlMetrics.isLoading || enhancedTvlMetrics.isLoading || tvlComparison.isLoading ||
+  const isLoading = usageMetrics.isLoading || tvlMetrics.isLoading || tvlComparison.isLoading ||
                     cashflowMetrics.isLoading || marketOverview.isLoading || aiAnalysis.isLoading;
   
-  const isError = usageMetrics.isError || tvlMetrics.isError || enhancedTvlMetrics.isError || tvlComparison.isError ||
+  const isError = usageMetrics.isError || tvlMetrics.isError || tvlComparison.isError ||
                   cashflowMetrics.isError || marketOverview.isError || aiAnalysis.isError;
   
-  const error = usageMetrics.error || tvlMetrics.error || enhancedTvlMetrics.error || tvlComparison.error ||
+  const error = usageMetrics.error || tvlMetrics.error || tvlComparison.error ||
                 cashflowMetrics.error || marketOverview.error || aiAnalysis.error;
   
   const data = {
     usageMetrics: usageMetrics.data,
     tvlMetrics: tvlMetrics.data,
-    enhancedTvlMetrics: enhancedTvlMetrics.data,
     tvlComparison: tvlComparison.data,
     cashflowMetrics: cashflowMetrics.data,
     marketOverview: marketOverview.data,
@@ -878,9 +781,7 @@ export function useDataCache() {
   };
   
   const setCachedData = <T>(key: any[], data: T, ttl?: number) => {
-    queryClient.setQueryData(key, data, {
-      staleTime: ttl || 5 * 60 * 1000,
-    });
+    queryClient.setQueryData(key, data);
   };
   
   const removeCachedData = (key: any[]) => {

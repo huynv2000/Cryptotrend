@@ -273,7 +273,7 @@ export async function GET(request: NextRequest) {
 // Helper functions
 function generateMockHistoricalData(metric: string, timeframe: string, now: Date, timeRange: number): any[] {
   const dataPoints = Math.min(100, Math.max(24, Math.floor(timeRange / (5 * 60 * 1000)))); // Max 100 data points
-  const data = [];
+  const data: any[] = [];
   const baseValue = getBaseValueForMetric(metric);
   
   for (let i = dataPoints - 1; i >= 0; i--) {

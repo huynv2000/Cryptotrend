@@ -33,27 +33,11 @@ export function formatNumber(num: number | null | undefined, decimals: number = 
   return value.toFixed(decimals);
 }
 
-// Enhanced currency formatting using FinancialFormatter
 export function formatCurrency(num: number | null | undefined, currency: string = 'USD'): string {
-  // Import FinancialFormatter dynamically to avoid circular dependencies
-  // For now, use the enhanced compact formatting
   if (num === null || num === undefined || isNaN(num)) {
     return 'N/A';
   }
-  
-  // Use compact formatting for better readability
   const value = Number(num);
-  if (value >= 1e12) {
-    return `$${(value / 1e12).toFixed(2)}T`;
-  } else if (value >= 1e9) {
-    return `$${(value / 1e9).toFixed(2)}B`;
-  } else if (value >= 1e6) {
-    return `$${(value / 1e6).toFixed(2)}M`;
-  } else if (value >= 1e3) {
-    return `$${(value / 1e3).toFixed(2)}K`;
-  }
-  
-  // For smaller values, use standard currency format
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
@@ -62,42 +46,118 @@ export function formatCurrency(num: number | null | undefined, currency: string 
   }).format(value);
 }
 
-// New enhanced formatting functions
-export function formatCurrencyCompact(num: number | null | undefined, currency: string = 'USD'): string {
-  if (num === null || num === undefined || isNaN(num)) {
+// Enhanced financial value formatting with multiple display options
+export function formatFinancialValue(
+  value: number | null | undefined,
+  options: {
+    style?: 'full' | 'compact' | 'abbreviated' | 'scientific';
+    precision?: number;
+    showCurrency?: boolean;
+    locale?: string;
+  } = {}
+): string {
+  const {
+    style = 'compact',
+    precision = 2,
+    showCurrency = true,
+    locale = 'en-US'
+  } = options;
+
+  if (value === null || value === undefined || isNaN(value)) {
     return 'N/A';
   }
+
+  const absValue = Math.abs(value);
   
-  const value = Number(num);
-  if (value >= 1e12) {
-    return `$${(value / 1e12).toFixed(2)}T`;
-  } else if (value >= 1e9) {
-    return `$${(value / 1e9).toFixed(2)}B`;
-  } else if (value >= 1e6) {
-    return `$${(value / 1e6).toFixed(2)}M`;
-  } else if (value >= 1e3) {
-    return `$${(value / 1e3).toFixed(2)}K`;
+  switch (style) {
+    case 'full':
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: precision,
+        maximumFractionDigits: precision,
+      }).format(value);
+      
+    case 'compact':
+      if (absValue >= 1e12) {
+        return `${showCurrency ? '$' : ''}${(value / 1e12).toFixed(precision)}T`;
+      } else if (absValue >= 1e9) {
+        return `${showCurrency ? '$' : ''}${(value / 1e9).toFixed(precision)}B`;
+      } else if (absValue >= 1e6) {
+        return `${showCurrency ? '$' : ''}${(value / 1e6).toFixed(precision)}M`;
+      } else if (absValue >= 1e3) {
+        return `${showCurrency ? '$' : ''}${(value / 1e3).toFixed(precision)}K`;
+      }
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: precision,
+        maximumFractionDigits: precision,
+      }).format(value);
+      
+    case 'abbreviated':
+      return new Intl.NumberFormat(locale, {
+        notation: 'compact',
+        compactDisplay: 'short',
+        style: showCurrency ? 'currency' : 'decimal',
+        currency: 'USD',
+        minimumFractionDigits: precision,
+        maximumFractionDigits: precision,
+      }).format(value);
+      
+    case 'scientific':
+      return `${showCurrency ? '$' : ''}${value.toExponential(precision)}`;
+      
+    default:
+      return formatCurrency(value);
   }
-  
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
 }
 
-export function formatCurrencyDetailed(num: number | null | undefined, currency: string = 'USD'): string {
-  if (num === null || num === undefined || isNaN(num)) {
-    return 'N/A';
-  }
+// Get value hierarchy level for visual representation
+export function getValueHierarchy(value: number): {
+  level: 'trillion' | 'billion' | 'million' | 'thousand' | 'unit';
+  color: string;
+  icon: string;
+  threshold: number;
+} {
+  const absValue = Math.abs(value);
   
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
+  if (absValue >= 1e12) {
+    return {
+      level: 'trillion',
+      color: 'text-purple-600',
+      icon: 'crown',
+      threshold: 1e12
+    };
+  } else if (absValue >= 1e9) {
+    return {
+      level: 'billion',
+      color: 'text-blue-600',
+      icon: 'gem',
+      threshold: 1e9
+    };
+  } else if (absValue >= 1e6) {
+    return {
+      level: 'million',
+      color: 'text-green-600',
+      icon: 'star',
+      threshold: 1e6
+    };
+  } else if (absValue >= 1e3) {
+    return {
+      level: 'thousand',
+      color: 'text-orange-600',
+      icon: 'trending-up',
+      threshold: 1e3
+    };
+  } else {
+    return {
+      level: 'unit',
+      color: 'text-gray-600',
+      icon: 'dollar-sign',
+      threshold: 0
+    };
+  }
 }
 
 export function formatPercent(num: number | null | undefined, decimals: number = 2): string {
@@ -652,6 +712,8 @@ export const utils = {
   cn,
   formatNumber,
   formatCurrency,
+  formatFinancialValue,
+  getValueHierarchy,
   formatPercent,
   formatHashRate,
   formatDate,

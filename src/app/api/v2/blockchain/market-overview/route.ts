@@ -60,9 +60,9 @@ export async function GET(request: NextRequest) {
       // Main metrics with proper MetricValue structure
       marketCap: {
         value: priceData?.marketCap || 0,
-        change: calculateChange(priceData?.marketCap, 1000000000000),
-        changePercent: calculateChangePercent(priceData?.marketCap, 1000000000000),
-        trend: calculateTrend(priceData?.marketCap, 1000000000000),
+        change: calculateChange(priceData?.marketCap || 0, 1000000000000),
+        changePercent: calculateChangePercent(priceData?.marketCap || 0, 1000000000000),
+        trend: calculateTrend(priceData?.marketCap || 0, 1000000000000),
         timestamp: now,
       },
       
@@ -76,25 +76,25 @@ export async function GET(request: NextRequest) {
       
       volume24h: {
         value: priceData?.volume24h || 0,
-        change: calculateChange(priceData?.volume24h, 50000000000),
-        changePercent: calculateChangePercent(priceData?.volume24h, 50000000000),
-        trend: calculateTrend(priceData?.volume24h, 50000000000),
+        change: calculateChange(priceData?.volume24h || 0, 50000000000),
+        changePercent: calculateChangePercent(priceData?.volume24h || 0, 50000000000),
+        trend: calculateTrend(priceData?.volume24h || 0, 50000000000),
         timestamp: now,
       },
       
       priceChange24h: {
         value: priceData?.priceChange24h || 0,
-        change: calculateChange(priceData?.priceChange24h, 0),
-        changePercent: calculateChangePercent(priceData?.priceChange24h, 100),
-        trend: priceData?.priceChange24h > 0 ? 'up' : priceData?.priceChange24h < 0 ? 'down' : 'stable',
+        change: calculateChange(priceData?.priceChange24h || 0, 0),
+        changePercent: calculateChangePercent(priceData?.priceChange24h || 0, 100),
+        trend: (priceData?.priceChange24h || 0) > 0 ? 'up' : (priceData?.priceChange24h || 0) < 0 ? 'down' : 'stable',
         timestamp: now,
       },
       
       fearGreedIndex: {
         value: sentimentData?.fearGreedIndex || 50,
-        change: calculateChange(sentimentData?.fearGreedIndex, 50),
-        changePercent: calculateChangePercent(sentimentData?.fearGreedIndex, 50),
-        trend: calculateTrend(sentimentData?.fearGreedIndex, 50),
+        change: calculateChange(sentimentData?.fearGreedIndex || 50, 50),
+        changePercent: calculateChangePercent(sentimentData?.fearGreedIndex || 50, 50),
+        trend: calculateTrend(sentimentData?.fearGreedIndex || 50, 50),
         timestamp: now,
       },
       
@@ -169,13 +169,13 @@ function generateMarketCorrelations(allCryptos: any[]): any {
   
   // Generate correlation matrix
   for (let i = 0; i < assets.length; i++) {
-    matrix[i] = [];
+    matrix[i] = matrix[i] || [];
     for (let j = 0; j < assets.length; j++) {
       if (i === j) {
-        matrix[i][j] = 1; // Perfect correlation with self
+        (matrix[i] as any[])[j] = 1; // Perfect correlation with self
       } else {
         // Generate realistic correlation values
-        matrix[i][j] = 0.3 + Math.random() * 0.6; // 0.3 to 0.9
+        (matrix[i] as any[])[j] = 0.3 + Math.random() * 0.6; // 0.3 to 0.9
       }
     }
   }
@@ -213,7 +213,7 @@ function calculateVolatilityMetrics(recentPrices: any[]): any {
   }
   
   const prices = recentPrices.map(p => p.price);
-  const returns = [];
+  const returns: number[] = [];
   
   for (let i = 1; i < prices.length; i++) {
     returns.push((prices[i] - prices[i-1]) / prices[i-1]);
@@ -287,7 +287,7 @@ function calculateSupportLevels(recentPrices: any[]): number[] {
   if (recentPrices.length < 5) return [];
   
   const prices = recentPrices.map(p => p.price).sort((a, b) => a - b);
-  const supportLevels = [];
+  const supportLevels: number[] = [];
   
   // Find potential support levels (local minima)
   for (let i = 2; i < prices.length - 2; i++) {
@@ -304,7 +304,7 @@ function calculateResistanceLevels(recentPrices: any[]): number[] {
   if (recentPrices.length < 5) return [];
   
   const prices = recentPrices.map(p => p.price).sort((a, b) => b - a);
-  const resistanceLevels = [];
+  const resistanceLevels: number[] = [];
   
   // Find potential resistance levels (local maxima)
   for (let i = 2; i < prices.length - 2; i++) {
@@ -369,7 +369,7 @@ function calculateMomentum(recentPrices: any[]): number {
   if (recentPrices.length < 5) return 50;
   
   // Calculate momentum based on recent price changes
-  const recentChanges = [];
+  const recentChanges: number[] = [];
   for (let i = 1; i < Math.min(6, recentPrices.length); i++) {
     const change = ((recentPrices[i-1].price - recentPrices[i].price) / recentPrices[i].price) * 100;
     recentChanges.push(change);
@@ -395,7 +395,7 @@ function generatePriceTargets(recentPrices: any[], technicalData: any): { short:
 }
 
 function generateBuySignals(priceData: any, technicalData: any, sentimentData: any): string[] {
-  const signals = [];
+  const signals: string[] = [];
   
   if (technicalData && technicalData.rsi < 30) {
     signals.push('RSI indicates oversold conditions');
@@ -413,7 +413,7 @@ function generateBuySignals(priceData: any, technicalData: any, sentimentData: a
 }
 
 function generateSellSignals(priceData: any, technicalData: any, sentimentData: any): string[] {
-  const signals = [];
+  const signals: string[] = [];
   
   if (technicalData && technicalData.rsi > 70) {
     signals.push('RSI indicates overbought conditions');

@@ -33,7 +33,16 @@ export default function TestAIAnalysisPage() {
       }
     ];
 
-    const results = [];
+    interface TestResult {
+      name: string;
+      success: boolean;
+      status: number;
+      responseTime: number;
+      data: any;
+      error: string | null;
+    }
+
+    const results: TestResult[] = [];
 
     for (const test of tests) {
       try {

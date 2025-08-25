@@ -163,8 +163,8 @@ export const DataWithStatus = ({
       {isOutdated && showOutdatedIndicator && (
         <OutdatedDataIndicator 
           isOutdated={isOutdated}
-          hoursAgo={hoursAgo}
-          lastUpdated={lastUpdated}
+          {...(hoursAgo !== undefined && { hoursAgo })}
+          {...(lastUpdated !== undefined && { lastUpdated })}
           showDetails={false}
         />
       )}

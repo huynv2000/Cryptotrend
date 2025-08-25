@@ -8,6 +8,7 @@ interface MiniChartProps {
   height?: number;
   color?: string;
   trend?: 'up' | 'down' | 'stable';
+  className?: string;
 }
 
 export function MiniChart({ 
@@ -15,7 +16,8 @@ export function MiniChart({
   width = 100, 
   height = 40, 
   color = 'currentColor',
-  trend 
+  trend,
+  className
 }: MiniChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -98,7 +100,7 @@ export function MiniChart({
   return (
     <canvas
       ref={canvasRef}
-      className="rounded"
+      className={`rounded ${className || ''}`}
       style={{ width, height }}
     />
   );

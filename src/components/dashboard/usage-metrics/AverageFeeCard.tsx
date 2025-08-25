@@ -28,7 +28,7 @@ export default function AverageFeeCard({
   onClick
 }: AverageFeeCardProps) {
   // Only use real data - no mock data
-  const sparklineData = data && data.historicalData ? data.historicalData : null;
+  const sparklineData = null; // historicalData is not available in MetricValue type
   
   return (
     <EnhancedMetricCard
@@ -43,8 +43,8 @@ export default function AverageFeeCard({
       icon={<BarChart3 className="h-5 w-5 text-red-500" />}
       formatType="currency"
       isPositiveGood={false} // Lower fees are better
-      showSparkline={!!sparklineData}
-      sparklineData={sparklineData}
+      showSparkline={false}
+      sparklineData={undefined}
       className="hover:border-red-500/30"
     />
   );

@@ -33,6 +33,8 @@ interface OptimizedTVLData {
   };
 }
 
+export type { OptimizedTVLData };
+
 export class TVLPerformanceOptimizer {
   private static instance: TVLPerformanceOptimizer;
   private config: PerformanceConfig;

@@ -158,9 +158,9 @@ export async function GET(request: NextRequest) {
     const dataWithChanges = filteredData.map((item, index) => {
       let changePercent = 0;
       if (index > 0) {
-        const prevTVL = filteredData[index - 1].tvl;
+        const prevTVL = (filteredData[index - 1] as any)?.tvl || 0;
         if (prevTVL > 0) {
-          changePercent = ((item.tvl - prevTVL) / prevTVL) * 100;
+          changePercent = (((item as any)?.tvl || 0) - prevTVL) / prevTVL * 100;
         }
       }
       

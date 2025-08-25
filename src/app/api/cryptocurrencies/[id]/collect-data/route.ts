@@ -1,14 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    // Update or create coin data collection record
-    await db.run(`
-      INSERT OR REPLACE INTO coin_data_collection 
-      (cryptoId, status, lastCollected, nextCollection, errorCount, metadata)
-      VALUES (?, ?, datetime('now'), datetime('now', '+1 hour'), 0, '{}')
-    `, [params.id]);
+    const { id } = await params;
+    
+    // Update or create coin data collection record using Prisma
+    await db.coinDataCollection.upsert({
+      where: {
+        cryptoId: id
+      },
+      update: {
+        status: 'PENDING',
+        lastCollected: new Date(),
+        nextCollection: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+        errorCount: 0,
+        lastError: null,
+        metadata: {}
+      },
+      create: {
+        cryptoId: id,
+        status: 'PENDING',
+        lastCollected: new Date(),
+        nextCollection: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+        errorCount: 0,
+        metadata: {}
+      }
+    });
     
     return NextResponse.json({ success: true });
   } catch (error) {

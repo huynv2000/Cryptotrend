@@ -241,7 +241,7 @@ function calculateBridgeFlows(onChainData: any, volumeData: any): number {
 }
 
 function generateBridgeFlowPatterns(onChainData: any, volumeData: any, blockchain: string): any[] {
-  const patterns = [];
+  const patterns: any[] = [];
   const totalFlow = calculateBridgeFlows(onChainData, volumeData);
   
   // Generate some sample flow patterns
@@ -265,7 +265,7 @@ function generateBridgeFlowPatterns(onChainData: any, volumeData: any, blockchai
 }
 
 function generateExchangeFlowCorrelations(onChainData: any, volumeData: any): any[] {
-  const correlations = [];
+  const correlations: any[] = [];
   
   // Generate correlation data
   correlations.push({
@@ -305,7 +305,7 @@ function calculateStakingValue(blockchain: string, onChainData: any, priceData: 
 }
 
 function generateStakingTrends(blockchain: string, onChainData: any, priceData: any): any[] {
-  const trends = [];
+  const trends: any[] = [];
   const stakingValue = calculateStakingValue(blockchain, onChainData, priceData);
   
   trends.push({

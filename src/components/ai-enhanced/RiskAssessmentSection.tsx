@@ -278,7 +278,7 @@ const VaRChart: React.FC<{ varData: VaRResult; expectedShortfall: ExpectedShortf
   const chartHeight = height - 2 * padding;
 
   // Create normal distribution curve for VaR visualization
-  const points = [];
+  const points: { x: number; y: number }[] = [];
   for (let i = 0; i <= 100; i++) {
     const x = (i / 100) * chartWidth;
     const y = height - padding - (Math.exp(-Math.pow((i - 50) / 15, 2)) * chartHeight * 0.8);

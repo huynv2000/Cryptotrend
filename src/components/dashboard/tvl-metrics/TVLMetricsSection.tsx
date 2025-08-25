@@ -94,7 +94,7 @@ export default function TVLMetricsSection({
               DeFi TVL analysis for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading TVL metrics..." />
+          <LoadingState message="Loading TVL metrics..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
@@ -188,7 +188,9 @@ export default function TVLMetricsSection({
                     "text-sm font-medium",
                     isPositive ? "text-green-500" : "text-red-500"
                   )}>
-                    {isPositive ? '+' : ''}{changePercent.toFixed(1)}%
+                    {changePercent !== null && changePercent !== undefined 
+                      ? `${isPositive ? '+' : ''}${Number(changePercent).toFixed(1)}%` 
+                      : 'N/A'}
                   </div>
                 </div>
               );
@@ -221,10 +223,10 @@ export default function TVLMetricsSection({
                     formattedValue = formatCurrency(value);
                     break;
                   case 'percentage':
-                    formattedValue = `${value.toFixed(2)}%`;
+                    formattedValue = value !== null && value !== undefined ? `${Number(value).toFixed(2)}%` : 'N/A';
                     break;
                   case 'ratio':
-                    formattedValue = value.toFixed(3);
+                    formattedValue = value !== null && value !== undefined ? Number(value).toFixed(3) : 'N/A';
                     break;
                   default:
                     formattedValue = formatNumber(value);
@@ -246,7 +248,9 @@ export default function TVLMetricsSection({
                           variant={isPositive ? "default" : "destructive"}
                           className="text-xs"
                         >
-                          {isPositive ? '+' : ''}{changePercent.toFixed(1)}%
+                          {changePercent !== null && changePercent !== undefined 
+                            ? `${isPositive ? '+' : ''}${Number(changePercent).toFixed(1)}%` 
+                            : 'N/A'}
                         </Badge>
                       </div>
                       <CardTitle className="text-sm">{metric.title}</CardTitle>
@@ -279,10 +283,10 @@ export default function TVLMetricsSection({
                         formattedValue = formatCurrency(value);
                         break;
                       case 'percentage':
-                        formattedValue = `${value.toFixed(2)}%`;
+                        formattedValue = value !== null && value !== undefined ? `${Number(value).toFixed(2)}%` : 'N/A';
                         break;
                       case 'ratio':
-                        formattedValue = value.toFixed(3);
+                        formattedValue = value !== null && value !== undefined ? Number(value).toFixed(3) : 'N/A';
                         break;
                       default:
                         formattedValue = formatNumber(value);
@@ -317,7 +321,9 @@ export default function TVLMetricsSection({
                             "text-sm",
                             isPositive ? "text-green-500" : "text-red-500"
                           )}>
-                            {isPositive ? '+' : ''}{changePercent.toFixed(1)}%
+                            {changePercent !== null && changePercent !== undefined 
+                              ? `${isPositive ? '+' : ''}${Number(changePercent).toFixed(1)}%` 
+                              : 'N/A'}
                           </div>
                         </div>
                       </div>
@@ -360,9 +366,11 @@ export default function TVLMetricsSection({
                         </div>
                         <div className={cn(
                           "text-xs",
-                          protocol.change_1d >= 0 ? "text-green-500" : "text-red-500"
+                          protocol.change_1d !== null && protocol.change_1d !== undefined && protocol.change_1d >= 0 ? "text-green-500" : "text-red-500"
                         )}>
-                          {protocol.change_1d >= 0 ? '+' : ''}{protocol.change_1d.toFixed(1)}%
+                          {protocol.change_1d !== null && protocol.change_1d !== undefined 
+              ? `${protocol.change_1d >= 0 ? '+' : ''}${Number(protocol.change_1d).toFixed(1)}%` 
+              : 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -392,7 +400,9 @@ export default function TVLMetricsSection({
                             {category.replace(/([A-Z])/g, ' $1').trim()}
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {percentage.toFixed(1)}%
+                            {percentage !== null && percentage !== undefined && !isNaN(percentage) 
+                              ? `${Number(percentage).toFixed(1)}%` 
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
@@ -439,7 +449,9 @@ export default function TVLMetricsSection({
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-sm">Market Dominance</span>
                     <span className="font-semibold">
-                      {(data.tvlDominance?.value || 0).toFixed(2)}%
+                      {data.tvlDominance?.value !== null && data.tvlDominance?.value !== undefined 
+                        ? `${Number(data.tvlDominance.value).toFixed(2)}%` 
+                        : 'N/A'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -451,7 +463,9 @@ export default function TVLMetricsSection({
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-sm">TVL/MC Ratio</span>
                     <span className="font-semibold">
-                      {(data.tvlToMarketCapRatio?.value || 0).toFixed(3)}
+                      {data.tvlToMarketCapRatio?.value !== null && data.tvlToMarketCapRatio?.value !== undefined 
+                        ? Number(data.tvlToMarketCapRatio.value).toFixed(3) 
+                        : 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -478,9 +492,11 @@ export default function TVLMetricsSection({
                       )}
                       <span className={cn(
                         "font-semibold",
-                        data.chainTVLChange24h?.value >= 0 ? "text-green-500" : "text-red-500"
+                        data.chainTVLChange24h?.value !== null && data.chainTVLChange24h?.value !== undefined && data.chainTVLChange24h.value >= 0 ? "text-green-500" : "text-red-500"
                       )}>
-                        {(data.chainTVLChange24h?.value || 0).toFixed(2)}%
+                        {data.chainTVLChange24h?.value !== null && data.chainTVLChange24h?.value !== undefined 
+                          ? `${Number(data.chainTVLChange24h.value).toFixed(2)}%` 
+                          : 'N/A'}
                       </span>
                     </div>
                   </div>
@@ -494,9 +510,11 @@ export default function TVLMetricsSection({
                       )}
                       <span className={cn(
                         "font-semibold",
-                        data.chainTVLChange7d?.value >= 0 ? "text-green-500" : "text-red-500"
+                        data.chainTVLChange7d?.value !== null && data.chainTVLChange7d?.value !== undefined && data.chainTVLChange7d.value >= 0 ? "text-green-500" : "text-red-500"
                       )}>
-                        {(data.chainTVLChange7d?.value || 0).toFixed(2)}%
+                        {data.chainTVLChange7d?.value !== null && data.chainTVLChange7d?.value !== undefined 
+                          ? `${Number(data.chainTVLChange7d.value).toFixed(2)}%` 
+                          : 'N/A'}
                       </span>
                     </div>
                   </div>
@@ -510,9 +528,11 @@ export default function TVLMetricsSection({
                       )}
                       <span className={cn(
                         "font-semibold",
-                        data.chainTVLChange30d?.value >= 0 ? "text-green-500" : "text-red-500"
+                        data.chainTVLChange30d?.value !== null && data.chainTVLChange30d?.value !== undefined && data.chainTVLChange30d.value >= 0 ? "text-green-500" : "text-red-500"
                       )}>
-                        {(data.chainTVLChange30d?.value || 0).toFixed(2)}%
+                        {data.chainTVLChange30d?.value !== null && data.chainTVLChange30d?.value !== undefined 
+                          ? `${Number(data.chainTVLChange30d.value).toFixed(2)}%` 
+                          : 'N/A'}
                       </span>
                     </div>
                   </div>

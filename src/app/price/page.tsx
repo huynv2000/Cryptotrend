@@ -111,7 +111,7 @@ export default function PriceAnalysis() {
                 ${metrics?.currentPrice.toLocaleString()}
               </div>
               <p className={`text-xs ${getChangeColor(metrics?.priceChange || 0)}`}>
-                {metrics?.priceChange >= 0 ? '+' : ''}{metrics?.priceChange.toLocaleString()} ({metrics?.priceChangePercent}%)
+                {(metrics?.priceChange || 0) >= 0 ? '+' : ''}{(metrics?.priceChange || 0).toLocaleString()} ({metrics?.priceChangePercent || 0}%)
               </p>
             </CardContent>
           </Card>
@@ -349,21 +349,21 @@ export default function PriceAnalysis() {
               <div>
                 <h4 className="font-semibold text-gray-900 mb-3">Phân tích kỹ thuật</h4>
                 <div className="space-y-2 text-sm text-gray-700">
-                  <p>• Giá hiện tại: ${metrics?.currentPrice.toLocaleString()} ({metrics?.priceChangePercent >= 0 ? '+' : ''}{metrics?.priceChangePercent}% so với đầu kỳ)</p>
-                  <p>• Xu hướng giá {metrics?.priceTrend.toLowerCase()} trong 45 ngày gần nhất</p>
-                  <p>• Mức kháng cự quan trọng: ${metrics?.resistanceLevel.toLocaleString()}</p>
-                  <p>• Mức hỗ trợ quan trọng: ${metrics?.supportLevel.toLocaleString()}</p>
-                  <p>• Độ biến động giá: ${metrics?.volatility.toLocaleString()} (độ rủi ro trung bình)</p>
+                  <p>• Giá hiện tại: ${metrics?.currentPrice.toLocaleString()} ({(metrics?.priceChangePercent || 0) >= 0 ? '+' : ''}{metrics?.priceChangePercent || 0}% so với đầu kỳ)</p>
+                  <p>• Xu hướng giá {metrics?.priceTrend?.toLowerCase() || 'không xác định'} trong 45 ngày gần nhất</p>
+                  <p>• Mức kháng cự quan trọng: ${metrics?.resistanceLevel?.toLocaleString() || 'không xác định'}</p>
+                  <p>• Mức hỗ trợ quan trọng: ${metrics?.supportLevel?.toLocaleString() || 'không xác định'}</p>
+                  <p>• Độ biến động giá: ${metrics?.volatility?.toLocaleString() || 'không xác định'} (độ rủi ro trung bình)</p>
                 </div>
               </div>
               
               <div>
                 <h4 className="font-semibold text-gray-900 mb-3">Nhận định thị trường</h4>
                 <div className="space-y-2 text-sm text-gray-700">
-                  <p>• Giá đang {metrics?.currentPrice > metrics?.avgPrice ? 'trên' : 'dưới'} mức trung bình 90 ngày</p>
-                  <p>• Biến động giá ở mức {metrics?.volatility > 2000 ? 'cao' : metrics?.volatility > 1000 ? 'trung bình' : 'thấp'}</p>
-                  <p>• Cần theo dõi các mức ${metrics?.resistanceLevel.toLocaleString()} (kháng cự) và ${metrics?.supportLevel.toLocaleString()} (hỗ trợ)</p>
-                  <p>• Xu hướng {metrics?.priceTrend.toLowerCase()} có thể tiếp tục nếu có khối lượng xác nhận</p>
+                  <p>• Giá đang {(metrics?.currentPrice || 0) > (metrics?.avgPrice || 0) ? 'trên' : 'dưới'} mức trung bình 90 ngày</p>
+                  <p>• Biến động giá ở mức {(metrics?.volatility || 0) > 2000 ? 'cao' : (metrics?.volatility || 0) > 1000 ? 'trung bình' : 'thấp'}</p>
+                  <p>• Cần theo dõi các mức {metrics?.resistanceLevel?.toLocaleString() || 'không xác định'} (kháng cự) và {metrics?.supportLevel?.toLocaleString() || 'không xác định'} (hỗ trợ)</p>
+                  <p>• Xu hướng {metrics?.priceTrend?.toLowerCase() || 'không xác định'} có thể tiếp tục nếu có khối lượng xác nhận</p>
                 </div>
               </div>
             </div>

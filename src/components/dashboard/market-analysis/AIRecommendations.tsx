@@ -70,7 +70,7 @@ export default function AIRecommendations({ data, isLoading }: AIRecommendations
                  data.sentiment === 'bearish' ? 'Bearish' : 'Neutral'}
               </div>
               <div className="text-sm text-muted-foreground">
-                Confidence: {(data.confidence * 100).toFixed(1)}%
+                Confidence: {data.confidence !== null && data.confidence !== undefined ? `${(data.confidence * 100).toFixed(1)}%` : 'N/A'}
               </div>
             </div>
             
@@ -149,7 +149,7 @@ export default function AIRecommendations({ data, isLoading }: AIRecommendations
                       variant={signal.type === 'buy' ? 'default' : 'secondary'}
                       className="text-xs"
                     >
-                      Strength: {(signal.strength * 100).toFixed(0)}%
+                      Strength: {signal.strength !== null && signal.strength !== undefined ? `${(signal.strength * 100).toFixed(0)}%` : 'N/A'}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       {signal.timeframe}
@@ -244,7 +244,7 @@ export default function AIRecommendations({ data, isLoading }: AIRecommendations
                       {rec.timeframe}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      Confidence: {(rec.confidence * 100).toFixed(0)}%
+                      Confidence: {rec.confidence !== null && rec.confidence !== undefined ? `${(rec.confidence * 100).toFixed(0)}%` : 'N/A'}
                     </span>
                   </div>
                 </div>

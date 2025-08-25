@@ -160,9 +160,9 @@ export default function OptimizedTVLHistoryChart({
     }
 
     const tvls = tvlData.map(d => d.tvl);
-    const currentTVL = tvls[tvls.length - 1];
+    const currentTVL = tvls[tvls.length - 1] || 0;
     const previousTVL = tvls.length > 1 ? tvls[tvls.length - 2] : currentTVL;
-    const change24h = previousTVL > 0 ? ((currentTVL - previousTVL) / previousTVL) * 100 : 0;
+    const change24h = (previousTVL || 0) > 0 ? ((currentTVL - (previousTVL || 0)) / (previousTVL || 0)) * 100 : 0;
     
     const avgTVL = tvls.reduce((sum, tvl) => sum + tvl, 0) / tvls.length;
     const peakTVL = Math.max(...tvls);
@@ -288,12 +288,12 @@ export default function OptimizedTVLHistoryChart({
               <Zap className="h-5 w-5 text-green-500" />
               <span>Optimized TVL History - {coinName || coinId}</span>
             </div>
-            <LoadingState text="Loading TVL data..." />
+            <LoadingState message="Loading TVL data..." />
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div style={{ height }} className="flex items-center justify-center">
-            <LoadingState text="Preparing optimized chart..." />
+            <LoadingState message="Preparing optimized chart..." />
           </div>
         </CardContent>
       </Card>
@@ -375,9 +375,11 @@ export default function OptimizedTVLHistoryChart({
           <div className="text-center">
             <div className={cn(
               "text-lg font-semibold",
-              stats.change24h >= 0 ? "text-green-600" : "text-red-600"
+              stats.change24h !== null && stats.change24h !== undefined && stats.change24h >= 0 ? "text-green-600" : "text-red-600"
             )}>
-              {stats.change24h >= 0 ? '+' : ''}{stats.change24h.toFixed(2)}%
+              {stats.change24h !== null && stats.change24h !== undefined 
+                ? `${stats.change24h >= 0 ? '+' : ''}${Number(stats.change24h).toFixed(2)}%` 
+                : 'N/A'}
             </div>
             <div className="text-xs text-muted-foreground">24h Change</div>
           </div>
@@ -395,7 +397,9 @@ export default function OptimizedTVLHistoryChart({
           </div>
           <div className="text-center">
             <div className="text-lg font-semibold text-orange-600">
-              {stats.volatility.toFixed(1)}%
+              {stats.volatility !== null && stats.volatility !== undefined 
+                ? `${Number(stats.volatility).toFixed(1)}%` 
+                : 'N/A'}
             </div>
             <div className="text-xs text-muted-foreground">Volatility</div>
           </div>
@@ -469,9 +473,11 @@ export default function OptimizedTVLHistoryChart({
                         <div className="text-sm text-muted-foreground">Distance from MA</div>
                         <div className={cn(
                           "text-lg font-semibold",
-                          combinedData.metrics.distanceFromMA >= 0 ? "text-green-600" : "text-red-600"
+                          combinedData.metrics.distanceFromMA !== null && combinedData.metrics.distanceFromMA !== undefined && combinedData.metrics.distanceFromMA >= 0 ? "text-green-600" : "text-red-600"
                         )}>
-                          {combinedData.metrics.distanceFromMA >= 0 ? '+' : ''}{combinedData.metrics.distanceFromMA.toFixed(2)}%
+                          {combinedData.metrics.distanceFromMA !== null && combinedData.metrics.distanceFromMA !== undefined 
+                            ? `${combinedData.metrics.distanceFromMA >= 0 ? '+' : ''}${Number(combinedData.metrics.distanceFromMA).toFixed(2)}%` 
+                            : 'N/A'}
                         </div>
                       </div>
                       <div>

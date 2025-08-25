@@ -20,23 +20,70 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { EnhancedAIAnalysisService } from '@/lib/ai-enhanced/enhanced-ai-service';
-import { Logger } from '@/lib/ai-logger';
+import { aiLogger } from '@/lib/ai-logger';
+import { ModelType } from '@/lib/ai-enhanced/types';
 
 // Initialize AI service
 const aiConfig = {
-  arima: { p: 1, d: 1, q: 1, seasonalP: 1, seasonalD: 1, seasonalQ: 1, seasonalPeriod: 24 },
-  prophet: { growth: 'linear', changepointPriorScale: 0.05, seasonalityPriorScale: 0.1, holidaysPriorScale: 0.1, seasonalityMode: 'additive' },
-  lstm: { units: 50, layers: 2, dropout: 0.2, recurrentDropout: 0.2, batchSize: 32, epochs: 100, learningRate: 0.001 },
-  ensemble: { models: ['ARIMA', 'PROPHET', 'LSTM'], weights: [0.3, 0.3, 0.4], votingMethod: 'weighted' as const },
+  arima: { p: 1, d: 1, q: 1, seasonalP: 1, seasonalD: 1, seasonalQ: 1, seasonalPeriod: 24, optimizationMethod: 'MLE' as const, informationCriterion: 'AIC' as const },
+  prophet: { 
+    growth: 'linear' as const, 
+    changepoints: [], 
+    changepointPriorScale: 0.05, 
+    seasonalityPriorScale: 0.1, 
+    holidaysPriorScale: 0.1, 
+    seasonalityMode: 'additive' as const,
+    yearlySeasonality: true,
+    weeklySeasonality: true,
+    dailySeasonality: false,
+    holidays: [],
+    additionalRegressors: [],
+    uncertaintySamples: 1000,
+    mcmcSamples: 0,
+    intervalWidth: 0.8
+  },
+  lstm: { 
+    units: 50, 
+    layers: 2, 
+    dropout: 0.2, 
+    recurrentDropout: 0.2, 
+    batchSize: 32, 
+    epochs: 100, 
+    learningRate: 0.001,
+    optimizer: 'adam' as const,
+    lossFunction: 'mse' as const,
+    activation: 'tanh' as const,
+    recurrentActivation: 'tanh' as const,
+    useAttention: false,
+    useBatchNorm: true,
+    sequenceLength: 30,
+    forecastHorizon: 24,
+    validationSplit: 0.2,
+    earlyStoppingPatience: 10,
+    reduceLROnPlateauPatience: 5
+  },
+  ensemble: { 
+    models: ['ARIMA', 'PROPHET', 'LSTM'] as ModelType[], 
+    weights: [0.3, 0.3, 0.4], 
+    votingMethod: 'weighted' as const, 
+    stackingModel: 'LSTM' as const,
+    adaptationRate: 0.1,
+    performanceWindow: 100,
+    diversityThreshold: 0.7,
+    confidenceThreshold: 0.8,
+    useDynamicWeights: true,
+    useModelSelection: false,
+    uncertaintyMethod: 'variance' as const
+  },
   var: { confidence: 0.95, timeHorizon: 1, method: 'historical' as const },
   expectedShortfall: { confidence: 0.95, timeHorizon: 1, method: 'historical' as const },
   monteCarlo: { simulations: 1000, timeSteps: 24, drift: 0.001, volatility: 0.02, method: 'euler' as const },
   nlp: { model: 'gpt-4', maxTokens: 1000, temperature: 0.7, topP: 0.9, topK: 50 },
   sentiment: { model: 'sentiment-transformer', threshold: 0.8, aggregationMethod: 'weighted' as const },
   emotion: { model: 'emotion-analysis', emotions: ['fear', 'greed', 'optimism', 'pessimism'], threshold: 0.7 },
-  isolation: { contamination: 0.1, maxSamples: 1000, nEstimators: 100 },
-  autoencoder: { encodingDim: 32, hiddenLayers: [64, 32], activation: 'relu', optimizer: 'adam', loss: 'mse' },
-  svm: { kernel: 'rbf', gamma: 'scale', nu: 0.5, maxIterations: 1000 },
+  isolation: { contamination: 0.1, maxSamples: 1000, nEstimators: 100, maxFeatures: 1.0, bootstrap: true, randomState: 42 },
+  autoencoder: { encodingDim: 32, hiddenLayers: [64, 32], activation: 'relu', optimizer: 'adam', loss: 'mse', epochs: 100, batchSize: 32, learningRate: 0.001, validationSplit: 0.2, earlyStopping: true, patience: 10 },
+  svm: { kernel: 'rbf', gamma: 'scale', nu: 0.5, maxIterations: 1000, tolerance: 0.001, shrinking: true, cacheSize: 200 },
   retrainingThreshold: 0.85,
   confidenceThreshold: 0.7,
   riskThreshold: 0.6,
@@ -48,7 +95,7 @@ const aiConfig = {
   enableRealTime: true
 };
 
-const logger = new Logger('AI-Enhanced-API');
+const logger = aiLogger;
 let aiService: EnhancedAIAnalysisService | null = null;
 
 // Initialize AI service lazily
@@ -109,7 +156,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Prepare response
-    const response = {
+    const response: any = {
       success: true,
       data: {
         analysis,
@@ -205,7 +252,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Prepare response
-    const response = {
+    const response: any = {
       success: true,
       data: {
         analysis,
@@ -228,7 +275,7 @@ export async function POST(request: NextRequest) {
       response.data.realtime = {
         updates: [],
         lastUpdate: new Date().toISOString(),
-        websocketUrl: `${process.env.NEXT_PUBLIC_WS_URL}/api/ai-enhanced/ws`
+        websocketUrl: `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000'}/api/ai-enhanced/ws`
       };
     }
 
@@ -262,27 +309,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// WebSocket upgrade handler for real-time updates
-export async function websocketUpgrade(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const cryptoId = searchParams.get('cryptoId');
-    
-    if (!cryptoId) {
-      return new Response('cryptoId parameter is required', { status: 400 });
-    }
-
-    logger.info('WebSocket upgrade request', { cryptoId });
-
-    // In a real implementation, you would handle WebSocket upgrade here
-    // For now, return a response indicating WebSocket support
-    return new Response('WebSocket support available', { status: 200 });
-
-  } catch (error) {
-    logger.error('WebSocket upgrade failed', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-
-    return new Response('WebSocket upgrade failed', { status: 500 });
-  }
-}
+// Note: WebSocket support in Next.js App Router requires separate route files
+// For WebSocket functionality, create a separate route at /api/ai-enhanced/ws/route.ts
+// with proper WebSocket handler using Next.js WebSocket API

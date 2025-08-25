@@ -198,8 +198,8 @@ export default function PriceVolumeChart({ cryptoId, cryptoName, currentPrice }:
           <div className="text-center p-3 bg-gray-50 rounded-lg">
             <div className="text-sm text-gray-600">Trend</div>
             <div className="text-lg font-bold">
-              <Badge className={chartData.length > 1 && chartData[chartData.length - 1].price > chartData[0].price ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}>
-                {chartData.length > 1 && chartData[chartData.length - 1].price > chartData[0].price ? 'Up' : 'Down'}
+              <Badge className={(chartData.length > 1 && (chartData[chartData.length - 1]?.price || 0) > (chartData[0]?.price || 0)) ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}>
+                {chartData.length > 1 && (chartData[chartData.length - 1]?.price || 0) > (chartData[0]?.price || 0) ? 'Up' : 'Down'}
               </Badge>
             </div>
           </div>

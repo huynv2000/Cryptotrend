@@ -5,7 +5,7 @@
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatFinancialValue } from '@/lib/utils';
 import type { MetricValue } from '@/lib/types';
 
 interface TotalTVLCardProps {
@@ -81,7 +81,7 @@ export default function TotalTVLCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">
-              {formatCurrency(data.value)}
+              {formatFinancialValue(data.value, { style: 'compact' })}
             </div>
             <div className={cn(
               "flex items-center space-x-1",

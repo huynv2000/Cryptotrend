@@ -196,10 +196,10 @@ const MiniPriceChart: React.FC<{
       
       {hoveredPoint !== null && (
         <div className="absolute top-2 left-2 bg-white p-2 rounded shadow-lg border text-xs">
-          <div><strong>Date:</strong> {predictions[hoveredPoint].timestamp.toLocaleDateString()}</div>
-          <div><strong>Prediction:</strong> ${predictions[hoveredPoint].predicted.toFixed(2)}</div>
-          <div><strong>Confidence:</strong> {(predictions[hoveredPoint].confidence * 100).toFixed(1)}%</div>
-          <div><strong>Model:</strong> {predictions[hoveredPoint].model}</div>
+          <div><strong>Date:</strong> {(predictions[hoveredPoint]?.timestamp || new Date()).toLocaleDateString()}</div>
+          <div><strong>Prediction:</strong> ${(predictions[hoveredPoint]?.predicted || 0).toFixed(2)}</div>
+          <div><strong>Confidence:</strong> {((predictions[hoveredPoint]?.confidence || 0) * 100).toFixed(1)}%</div>
+          <div><strong>Model:</strong> {predictions[hoveredPoint]?.model || 'Unknown'}</div>
         </div>
       )}
     </div>
@@ -718,8 +718,8 @@ export const PredictiveAnalysisSection: React.FC<PredictiveAnalysisSectionProps>
                 {(predictiveResults.modelAccuracy || []).map((model: ModelAccuracy, index: number) => (
                   <div key={index} className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-semibold">{model.model}</h5>
-                      <Badge variant="outline">{model.type}</Badge>
+                      <h5 className="font-semibold">Model {index + 1}</h5>
+                      <Badge variant="outline">ML</Badge>
                     </div>
                     <div className="space-y-3">
                       <div className="space-y-1">

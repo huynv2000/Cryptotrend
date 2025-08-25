@@ -197,7 +197,7 @@ export default function DataCollectionPage() {
             lastUpdate: new Date(),
             dataPoints: Object.keys(data.price || {}).length,
             errorRate: Math.random() * 5, // Simulate error rate
-            lastError: Math.random() > 0.8 ? 'API rate limit exceeded' : undefined,
+            lastError: Math.random() > 0.8 ? 'API rate limit exceeded' : null as any,
             consecutiveErrors: Math.random() > 0.9 ? Math.floor(Math.random() * 3) + 1 : 0
           },
           {
@@ -207,7 +207,7 @@ export default function DataCollectionPage() {
             lastUpdate: new Date(Date.now() - Math.random() * 300000), // Random time within 5 minutes
             dataPoints: Object.keys(data.technical || {}).length,
             errorRate: Math.random() * 3,
-            lastError: Math.random() > 0.85 ? 'Calculation error' : undefined,
+            lastError: Math.random() > 0.85 ? 'Calculation error' : null as any,
             consecutiveErrors: Math.random() > 0.95 ? Math.floor(Math.random() * 2) + 1 : 0
           },
           {
@@ -217,7 +217,7 @@ export default function DataCollectionPage() {
             lastUpdate: new Date(Date.now() - Math.random() * 600000), // Random time within 10 minutes
             dataPoints: Object.keys(data.onchain || {}).length,
             errorRate: Math.random() * 7,
-            lastError: Math.random() > 0.75 ? 'Network timeout' : undefined,
+            lastError: Math.random() > 0.75 ? 'Network timeout' : null as any,
             consecutiveErrors: Math.random() > 0.88 ? Math.floor(Math.random() * 4) + 1 : 0
           },
           {
@@ -227,7 +227,7 @@ export default function DataCollectionPage() {
             lastUpdate: new Date(Date.now() - Math.random() * 900000), // Random time within 15 minutes
             dataPoints: Object.keys(data.sentiment || {}).length,
             errorRate: Math.random() * 4,
-            lastError: Math.random() > 0.82 ? 'API authentication failed' : undefined,
+            lastError: Math.random() > 0.82 ? 'API authentication failed' : null as any,
             consecutiveErrors: Math.random() > 0.92 ? Math.floor(Math.random() * 3) + 1 : 0
           },
           {
@@ -237,16 +237,16 @@ export default function DataCollectionPage() {
             lastUpdate: new Date(Date.now() - Math.random() * 1200000), // Random time within 20 minutes
             dataPoints: Object.keys(data.derivatives || {}).length,
             errorRate: Math.random() * 6,
-            lastError: Math.random() > 0.78 ? 'Data source unavailable' : undefined,
+            lastError: Math.random() > 0.78 ? 'Data source unavailable' : null as any,
             consecutiveErrors: Math.random() > 0.9 ? Math.floor(Math.random() * 5) + 1 : 0
           }
         ];
         
         // Update status based on error rates and consecutive errors
         sources.forEach(source => {
-          if (source.errorRate > 10 || source.consecutiveErrors > 3) {
+          if (source.errorRate > 10 || (source.consecutiveErrors && source.consecutiveErrors > 3)) {
             source.status = 'error';
-          } else if (source.errorRate > 5 || source.consecutiveErrors > 1) {
+          } else if (source.errorRate > 5 || (source.consecutiveErrors && source.consecutiveErrors > 1)) {
             source.status = 'inactive';
           }
         });
@@ -860,7 +860,7 @@ export default function DataCollectionPage() {
                             <div>
                               <span className="font-medium">Sự đồng thuận:</span>
                               <div className="mt-1">
-                                {aiAnalysis.every(a => a.recommendation === aiAnalysis[0].recommendation) ? (
+                                {aiAnalysis.length > 0 && aiAnalysis.every((a, index) => index === 0 || a.recommendation === (aiAnalysis[0]?.recommendation || '')) ? (
                                   <Badge className="bg-green-100 text-green-800">Cao</Badge>
                                 ) : (
                                   <Badge className="bg-yellow-100 text-yellow-800">Trung bình</Badge>

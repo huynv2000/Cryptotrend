@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MetricCardWithBaseline from '../ui/MetricCardWithBaseline';
 import { LoadingState } from '@/components/LoadingState';
-import { cn, formatNumber, formatCurrency, formatCurrencyCompact, formatCurrencyDetailed } from '@/lib/utils';
+import { cn, formatNumber, formatFinancialValue } from '@/lib/utils';
 import type { TVLMetrics, BlockchainValue, TimeframeValue } from '@/lib/types';
+import { useDisplayPreferences } from '@/contexts/DisplayPreferencesContext';
 
 // TVL History imports
 import TVLBarChart from '../tvl-history/TVLBarChart';
@@ -68,6 +69,7 @@ export default function TVLMetricsSectionWithBaseline({
   data,
   isLoading
 }: TVLMetricsSectionProps) {
+  const { preferences } = useDisplayPreferences();
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   
   // TVL History state
@@ -187,7 +189,7 @@ export default function TVLMetricsSectionWithBaseline({
               DeFi TVL analysis for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading TVL metrics..." />
+          <LoadingState message="Loading TVL metrics..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -272,12 +274,14 @@ export default function TVLMetricsSectionWithBaseline({
                     trend: metricData?.trend
                   }}
                   formatType={metric.formatType}
+                  formatStyle={preferences.numberFormat}
                   isPositiveGood={metric.isPositiveGood}
+                  showFormatToggle={true}
+                  showHierarchy={preferences.showHierarchy}
                   className={cn(
                     "cursor-pointer hover:shadow-lg transition-all",
                     selectedMetric === metric.key && "ring-2 ring-green-500 bg-green-500/5"
                   )}
-                  onClick={() => handleMetricClick(metric.key)}
                 />
               );
             })}
@@ -311,13 +315,15 @@ export default function TVLMetricsSectionWithBaseline({
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">
-                          {formatCurrencyCompact(protocol.tvl)}
+                          {formatFinancialValue(protocol.tvl, { style: 'compact' })}
                         </div>
                         <div className={cn(
                           "text-xs",
-                          protocol.change_1d != null && protocol.change_1d >= 0 ? "text-green-500" : "text-red-500"
+                          protocol.change_1d !== null && protocol.change_1d !== undefined && protocol.change_1d >= 0 ? "text-green-500" : "text-red-500"
                         )}>
-                          {protocol.change_1d != null ? (protocol.change_1d >= 0 ? '+' : '') + protocol.change_1d.toFixed(1) + '%' : 'N/A'}
+                          {protocol.change_1d !== null && protocol.change_1d !== undefined 
+                            ? `${protocol.change_1d >= 0 ? '+' : ''}${Number(protocol.change_1d).toFixed(1)}%` 
+                            : 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -347,7 +353,9 @@ export default function TVLMetricsSectionWithBaseline({
                             {category.replace(/([A-Z])/g, ' $1').trim()}
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {percentage != null ? percentage.toFixed(1) + '%' : 'N/A'}
+                            {percentage !== null && percentage !== undefined && !isNaN(percentage) 
+                              ? `${Number(percentage).toFixed(1)}%` 
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
@@ -357,7 +365,7 @@ export default function TVLMetricsSectionWithBaseline({
                           />
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatCurrencyCompact(tvl as number)}
+                          {formatFinancialValue(tvl as number, { style: 'compact' })}
                         </div>
                       </div>
                     );
@@ -405,34 +413,38 @@ export default function TVLMetricsSectionWithBaseline({
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
                 <div className="text-center">
                   <div className="text-lg font-semibold text-blue-600">
-                    {formatCurrencyCompact(stats.currentTVL)}
+                    {formatFinancialValue(stats.currentTVL, { style: 'compact' })}
                   </div>
                   <div className="text-xs text-muted-foreground">Current TVL</div>
                 </div>
                 <div className="text-center">
                   <div className={cn(
                     "text-lg font-semibold",
-                    stats.change24h != null && stats.change24h >= 0 ? "text-green-600" : "text-red-600"
+                    stats.change24h !== null && stats.change24h !== undefined && stats.change24h >= 0 ? "text-green-600" : "text-red-600"
                   )}>
-                    {stats.change24h != null ? (stats.change24h >= 0 ? '+' : '') + stats.change24h.toFixed(2) + '%' : 'N/A'}
+                    {stats.change24h !== null && stats.change24h !== undefined 
+                      ? `${stats.change24h >= 0 ? '+' : ''}${Number(stats.change24h).toFixed(2)}%` 
+                      : 'N/A'}
                   </div>
                   <div className="text-xs text-muted-foreground">24h Change</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-purple-600">
-                    {formatCurrencyCompact(stats.avgTVL)}
+                    {formatFinancialValue(stats.avgTVL, { style: 'compact' })}
                   </div>
                   <div className="text-xs text-muted-foreground">Average TVL</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-green-600">
-                    {formatCurrencyCompact(stats.peakTVL)}
+                    {formatFinancialValue(stats.peakTVL, { style: 'compact' })}
                   </div>
                   <div className="text-xs text-muted-foreground">Peak TVL</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-orange-600">
-                    {stats.volatility != null ? stats.volatility.toFixed(1) + '%' : 'N/A'}
+                    {stats.volatility !== null && stats.volatility !== undefined 
+                      ? `${Number(stats.volatility).toFixed(1)}%` 
+                      : 'N/A'}
                   </div>
                   <div className="text-xs text-muted-foreground">Volatility</div>
                 </div>
@@ -477,7 +489,7 @@ export default function TVLMetricsSectionWithBaseline({
               <div className="w-full">
                 {(tvlLoading || isTVLLoading) && tvlHistory.length === 0 ? (
                   <div className="flex items-center justify-center h-96">
-                    <LoadingState text="Loading TVL chart..." />
+                    <LoadingState message="Loading TVL chart..." />
                   </div>
                 ) : tvlError ? (
                   <div className="flex items-center justify-center h-96">
@@ -516,16 +528,18 @@ export default function TVLMetricsSectionWithBaseline({
                     <div>
                       <div className="text-sm text-muted-foreground">Current MA</div>
                       <div className="text-lg font-semibold">
-                        {formatCurrencyCompact(metrics.currentMA)}
+                        {formatFinancialValue(metrics.currentMA, { style: 'compact' })}
                       </div>
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">Distance from MA</div>
                       <div className={cn(
                         "text-lg font-semibold",
-                        metrics.distanceFromMA != null && metrics.distanceFromMA >= 0 ? "text-green-600" : "text-red-600"
+                        metrics.distanceFromMA !== null && metrics.distanceFromMA !== undefined && metrics.distanceFromMA >= 0 ? "text-green-600" : "text-red-600"
                       )}>
-                        {metrics.distanceFromMA != null ? (metrics.distanceFromMA >= 0 ? '+' : '') + metrics.distanceFromMA.toFixed(2) + '%' : 'N/A'}
+                        {metrics.distanceFromMA !== null && metrics.distanceFromMA !== undefined 
+                          ? `${metrics.distanceFromMA >= 0 ? '+' : ''}${Number(metrics.distanceFromMA).toFixed(2)}%` 
+                          : 'N/A'}
                       </div>
                     </div>
                     <div>
@@ -578,7 +592,9 @@ export default function TVLMetricsSectionWithBaseline({
                   <div>
                     <div className="text-sm text-muted-foreground">Signal Strength</div>
                     <div className="text-lg font-semibold">
-                      {analysis.strength != null ? analysis.strength.toFixed(0) + '%' : 'N/A'}
+                      {analysis.strength !== null && analysis.strength !== undefined 
+                        ? `${Number(analysis.strength).toFixed(0)}%` 
+                        : 'N/A'}
                     </div>
                   </div>
                   <div>
@@ -590,7 +606,9 @@ export default function TVLMetricsSectionWithBaseline({
                   <div>
                     <div className="text-sm text-muted-foreground">Volatility</div>
                     <div className="text-lg font-semibold text-orange-600">
-                      {stats.volatility != null ? stats.volatility.toFixed(1) + '%' : 'N/A'}
+                      {stats.volatility !== null && stats.volatility !== undefined 
+                        ? `${Number(stats.volatility).toFixed(1)}%` 
+                        : 'N/A'}
                     </div>
                   </div>
                 </div>

@@ -126,11 +126,11 @@ export async function POST(request: NextRequest) {
       reasoning: analysisResult.reasoning,
       riskLevel: analysisResult.riskLevel,
       keyMetrics: {
-        mvrv: cryptoData.onChain.mvrv,
-        nupl: cryptoData.onChain.nupl,
-        fearGreedIndex: cryptoData.sentiment.fearGreedIndex,
-        rsi: cryptoData.technical.rsi,
-        fundingRate: cryptoData.derivatives.fundingRate
+        mvrv: Number(cryptoData.onChain.mvrv) || 0,
+        nupl: Number(cryptoData.onChain.nupl) || 0,
+        fearGreedIndex: Number(cryptoData.sentiment.fearGreedIndex) || 0,
+        rsi: Number(cryptoData.technical.rsi) || 0,
+        fundingRate: Number(cryptoData.derivatives.fundingRate) || 0
       },
       timestamp: new Date().toISOString()
     }

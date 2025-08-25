@@ -15,6 +15,11 @@ import {
   type LoadTestResult,
   type LoadTestProgress
 } from '@/lib/performance';
+import { CachePerformanceDashboard } from '@/components/performance/CachePerformanceDashboard';
+import { PerformanceMonitoringDashboard } from '@/components/performance/PerformanceMonitoringDashboard';
+import AIBuildAnalysisDashboard from '@/components/performance/AIBuildAnalysisDashboard';
+import CodeSplittingDashboard from '@/components/performance/CodeSplittingDashboard';
+import BundleSizeOptimizationDashboard from '@/components/performance/BundleSizeOptimizationDashboard';
 import { 
   Database, 
   Zap, 
@@ -25,13 +30,13 @@ import {
   AlertTriangle,
   RefreshCw,
   Play,
-  Stop,
   TrendingUp,
   TrendingDown,
   Clock,
   HardDrive,
   Cpu,
-  Wifi
+  Wifi,
+  Brain
 } from 'lucide-react';
 import { formatDuration, formatBytes, formatPercentage, calculatePerformanceGrade } from '@/lib/performance';
 
@@ -284,8 +289,12 @@ export default function PerformanceOptimizationPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
           <TabsTrigger value="cache">Cache</TabsTrigger>
+          <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
           <TabsTrigger value="loadtest">Load Test</TabsTrigger>
+          <TabsTrigger value="ai-analysis">AI Analysis</TabsTrigger>
+          <TabsTrigger value="code-splitting">Code Splitting</TabsTrigger>
+          <TabsTrigger value="bundle-size">Bundle Size</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -457,97 +466,11 @@ export default function PerformanceOptimizationPage() {
         </TabsContent>
 
         <TabsContent value="cache" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Memory Cache</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Hit Rate</span>
-                  <span className="font-semibold">
-                    {formatPercentage(cacheStats?.memory.hitRate || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Size</span>
-                  <span className="font-semibold">
-                    {cacheStats?.memory.size || 0} items
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avg Latency</span>
-                  <span className="font-semibold">
-                    {formatDuration(cacheStats?.memory.avgLatency || 0)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+          <CachePerformanceDashboard />
+        </TabsContent>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Redis Cache</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Hit Rate</span>
-                  <span className="font-semibold">
-                    {formatPercentage(cacheStats?.redis.hitRate || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Size</span>
-                  <span className="font-semibold">
-                    {cacheStats?.redis.size || 0} items
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avg Latency</span>
-                  <span className="font-semibold">
-                    {formatDuration(cacheStats?.redis.avgLatency || 0)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>CDN Cache</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Hit Rate</span>
-                  <span className="font-semibold">
-                    {formatPercentage(cacheStats?.cdn.hitRate || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Size</span>
-                  <span className="font-semibold">
-                    {cacheStats?.cdn.size || 0} items
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avg Latency</span>
-                  <span className="font-semibold">
-                    {formatDuration(cacheStats?.cdn.avgLatency || 0)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Cache Operations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={handleCacheWarming} className="w-full">
-                <Play className="h-4 w-4 mr-2" />
-                Run Cache Warming
-              </Button>
-            </CardContent>
-          </Card>
+        <TabsContent value="monitoring" className="space-y-4">
+          <PerformanceMonitoringDashboard />
         </TabsContent>
 
         <TabsContent value="system" className="space-y-4">
@@ -683,6 +606,18 @@ export default function PerformanceOptimizationPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-analysis" className="space-y-4">
+          <AIBuildAnalysisDashboard />
+        </TabsContent>
+
+        <TabsContent value="code-splitting" className="space-y-4">
+          <CodeSplittingDashboard />
+        </TabsContent>
+
+        <TabsContent value="bundle-size" className="space-y-4">
+          <BundleSizeOptimizationDashboard />
         </TabsContent>
       </Tabs>
     </div>

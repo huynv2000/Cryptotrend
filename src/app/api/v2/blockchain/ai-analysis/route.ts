@@ -134,7 +134,7 @@ function determineOverallSentiment(priceData: any, onChainData: any, technicalDa
 }
 
 function generateTradingSignals(priceData: any, onChainData: any, technicalData: any, sentimentData: any): any[] {
-  const signals = [];
+  const signals: any[] = [];
   
   // Generate buy signals
   if (technicalData?.rsi < 30) {
@@ -198,7 +198,7 @@ function generateTradingSignals(priceData: any, onChainData: any, technicalData:
 }
 
 function generateRecommendations(priceData: any, onChainData: any, technicalData: any, sentimentData: any): any[] {
-  const recommendations = [];
+  const recommendations: any[] = [];
   const overallSentiment = determineOverallSentiment(priceData, onChainData, technicalData, sentimentData);
   
   if (overallSentiment === 'bullish') {
@@ -286,7 +286,7 @@ function generateRiskAssessment(priceData: any, onChainData: any, technicalData:
 }
 
 function generateRiskRecommendations(riskLevel: 'low' | 'medium' | 'high'): string[] {
-  const recommendations = [];
+  const recommendations: string[] = [];
   
   if (riskLevel === 'high') {
     recommendations.push('Consider reducing position size');
@@ -307,7 +307,7 @@ function generateRiskRecommendations(riskLevel: 'low' | 'medium' | 'high'): stri
 }
 
 function generateMarketInsights(priceData: any, onChainData: any, technicalData: any, sentimentData: any, recentPrices: any[]): any[] {
-  const insights = [];
+  const insights: any[] = [];
   const overallSentiment = determineOverallSentiment(priceData, onChainData, technicalData, sentimentData);
   
   // Market trend insight
@@ -376,14 +376,14 @@ function generateMarketInsights(priceData: any, onChainData: any, technicalData:
 }
 
 function generatePredictiveIndicators(recentPrices: any[], technicalData: any): any[] {
-  const indicators = [];
+  const indicators: any[] = [];
   
   if (recentPrices.length > 5) {
     const pricePrediction = generatePricePrediction(recentPrices, technicalData);
     indicators.push({
       name: 'Price Prediction',
-      value: pricePrediction.target || 0,
-      prediction: pricePrediction.direction || 'neutral',
+      value: pricePrediction.prediction || 0,
+      prediction: 'neutral',
       confidence: pricePrediction.confidence || 50,
       timeframe: '7d' as const,
       accuracy: 75,
@@ -394,9 +394,9 @@ function generatePredictiveIndicators(recentPrices: any[], technicalData: any): 
     const trendForecast = generateTrendForecast(recentPrices, null);
     indicators.push({
       name: 'Trend Forecast',
-      value: trendForecast.strength || 50,
-      prediction: trendForecast.direction || 'stable',
-      confidence: trendForecast.confidence || 60,
+      value: 50,
+      prediction: trendForecast,
+      confidence: 60,
       timeframe: '24h' as const,
       accuracy: 70,
     });
@@ -433,7 +433,7 @@ function performVARAnalysis(recentPrices: any[]): any {
   if (recentPrices.length < 10) return { var95: 0, var99: 0, timeHorizon: '24h' };
   
   const prices = recentPrices.map(p => p.price);
-  const returns = [];
+  const returns: number[] = [];
   for (let i = 1; i < prices.length; i++) {
     returns.push((prices[i] - prices[i-1]) / prices[i-1]);
   }
@@ -444,8 +444,8 @@ function performVARAnalysis(recentPrices: any[]): any {
   const var99 = returns[Math.floor(returns.length * 0.01)];
   
   return {
-    var95: Math.abs(var95 * 100),
-    var99: Math.abs(var99 * 100),
+    var95: Math.abs((var95 || 0) * 100),
+    var99: Math.abs((var99 || 0) * 100),
     timeHorizon: '24h',
     currentPrice: prices[0]
   };
@@ -455,7 +455,7 @@ function performCVARAnalysis(recentPrices: any[]): any {
   if (recentPrices.length < 10) return { cvar95: 0, cvar99: 0, timeHorizon: '24h' };
   
   const prices = recentPrices.map(p => p.price);
-  const returns = [];
+  const returns: number[] = [];
   for (let i = 1; i < prices.length; i++) {
     returns.push((prices[i] - prices[i-1]) / prices[i-1]);
   }
@@ -483,7 +483,7 @@ function performMonteCarloSimulation(recentPrices: any[]): any {
   if (recentPrices.length < 10) return { meanReturn: 0, volatility: 0, scenarios: 0 };
   
   const prices = recentPrices.map(p => p.price);
-  const returns = [];
+  const returns: number[] = [];
   for (let i = 1; i < prices.length; i++) {
     returns.push((prices[i] - prices[i-1]) / prices[i-1]);
   }
@@ -493,7 +493,7 @@ function performMonteCarloSimulation(recentPrices: any[]): any {
   const volatility = Math.sqrt(variance);
   
   // Simulate 1000 scenarios
-  const scenarios = [];
+  const scenarios: number[] = [];
   for (let i = 0; i < 1000; i++) {
     const randomReturn = meanReturn + (Math.random() - 0.5) * volatility * 2;
     scenarios.push(randomReturn);
@@ -506,9 +506,9 @@ function performMonteCarloSimulation(recentPrices: any[]): any {
     volatility: volatility * 100,
     scenarios: 1000,
     percentiles: {
-      p5: scenarios[Math.floor(scenarios.length * 0.05)] * 100,
-      p50: scenarios[Math.floor(scenarios.length * 0.5)] * 100,
-      p95: scenarios[Math.floor(scenarios.length * 0.95)] * 100,
+      p5: (scenarios[Math.floor(scenarios.length * 0.05)] || 0) * 100,
+      p50: (scenarios[Math.floor(scenarios.length * 0.5)] || 0) * 100,
+      p95: (scenarios[Math.floor(scenarios.length * 0.95)] || 0) * 100,
     }
   };
 }
@@ -543,7 +543,7 @@ function assessRiskLevel(priceData: any, onChainData: any, technicalData: any): 
 }
 
 function identifyRiskFactors(priceData: any, onChainData: any, technicalData: any, sentimentData: any): string[] {
-  const factors = [];
+  const factors: string[] = [];
   
   if (priceData && Math.abs(priceData.priceChange24h) > 10) {
     factors.push('High price volatility');
@@ -629,7 +629,7 @@ function performIsolationForestAnalysis(recentPrices: any[]): any {
   if (recentPrices.length < 10) return { anomalyScore: 0, outliers: [] };
   
   const prices = recentPrices.map(p => p.price);
-  const returns = [];
+  const returns: number[] = [];
   for (let i = 1; i < prices.length; i++) {
     returns.push((prices[i] - prices[i-1]) / prices[i-1]);
   }
@@ -713,7 +713,7 @@ function calculateAnomalyScore(recentPrices: any[]): number {
 }
 
 function detectAnomalies(recentPrices: any[]): any[] {
-  const anomalies = [];
+  const anomalies: any[] = [];
   
   const isoForest = performIsolationForestAnalysis(recentPrices);
   const autoencoder = performAutoencoderAnalysis(recentPrices);
@@ -799,7 +799,7 @@ function generateTrendForecast(recentPrices: any[], onChainData: any): string {
 function generateVolatilityForecast(recentPrices: any[]): number {
   if (recentPrices.length < 5) return 0;
   
-  const returns = [];
+  const returns: number[] = [];
   for (let i = 1; i < Math.min(6, recentPrices.length); i++) {
     returns.push(Math.abs((recentPrices[i-1].price - recentPrices[i].price) / recentPrices[i].price));
   }
@@ -812,15 +812,15 @@ function calculateConfidenceIntervals(recentPrices: any[]): any {
   if (recentPrices.length < 10) return { lower: 0, upper: 0 };
   
   const currentPrice = recentPrices[0].price;
-  const returns = [];
+  const returns: number[] = [];
   for (let i = 1; i < recentPrices.length; i++) {
     returns.push((recentPrices[i-1].price - recentPrices[i].price) / recentPrices[i].price);
   }
   
   returns.sort((a, b) => a - b);
   
-  const lowerPercentile = returns[Math.floor(returns.length * 0.1)];
-  const upperPercentile = returns[Math.floor(returns.length * 0.9)];
+  const lowerPercentile = returns[Math.floor(returns.length * 0.1)] || 0;
+  const upperPercentile = returns[Math.floor(returns.length * 0.9)] || 0;
   
   return {
     lower: currentPrice * (1 + lowerPercentile),
@@ -882,7 +882,7 @@ function predictNextRegime(recentPrices: any[], onChainData: any, sentimentData:
 }
 
 function generateEntrySignals(priceData: any, technicalData: any, sentimentData: any): string[] {
-  const signals = [];
+  const signals: string[] = [];
   
   if (technicalData && technicalData.rsi < 30) {
     signals.push('RSI oversold - Entry signal');
@@ -900,7 +900,7 @@ function generateEntrySignals(priceData: any, technicalData: any, sentimentData:
 }
 
 function generateExitSignals(priceData: any, technicalData: any, sentimentData: any): string[] {
-  const signals = [];
+  const signals: string[] = [];
   
   if (technicalData && technicalData.rsi > 70) {
     signals.push('RSI overbought - Exit signal');
@@ -946,7 +946,7 @@ function calculatePositionSize(priceData: any, onChainData: any): number {
 }
 
 function generateKeyInsights(priceData: any, onChainData: any, technicalData: any, sentimentData: any): string[] {
-  const insights = [];
+  const insights: string[] = [];
   
   if (priceData && priceData.priceChange24h) {
     const change = priceData.priceChange24h;
@@ -990,7 +990,7 @@ function generateMarketNarrative(sentimentData: any, onChainData: any): string {
 }
 
 function identifyContrarianSignals(priceData: any, sentimentData: any): string[] {
-  const signals = [];
+  const signals: string[] = [];
   
   if (sentimentData && sentimentData.fearGreedIndex < 25 && priceData && priceData.priceChange24h < -5) {
     signals.push('Extreme fear with price drop - Strong contrarian buy signal');
@@ -1004,7 +1004,7 @@ function identifyContrarianSignals(priceData: any, sentimentData: any): string[]
 }
 
 function identifyMomentumSignals(priceData: any, technicalData: any): string[] {
-  const signals = [];
+  const signals: string[] = [];
   
   if (technicalData && technicalData.macd > 0 && technicalData.rsi > 50) {
     signals.push('Positive momentum with bullish technical indicators');
@@ -1044,7 +1044,7 @@ function calculateRecommendationConfidence(priceData: any, onChainData: any, tec
 }
 
 function generateReasoning(priceData: any, onChainData: any, technicalData: any, sentimentData: any): string {
-  const reasons = [];
+  const reasons: string[] = [];
   
   if (technicalData && technicalData.rsi < 30) {
     reasons.push('RSI indicates oversold conditions');

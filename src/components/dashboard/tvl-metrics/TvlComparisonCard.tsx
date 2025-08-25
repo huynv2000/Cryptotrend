@@ -5,7 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Award, Target } from 'lucide-react';
-import { cn, formatCurrency, formatNumber } from '@/lib/utils';
+import { cn, formatFinancialValue, formatNumber } from '@/lib/utils';
 import type { TVLComparison } from '@/lib/types';
 
 interface TvlComparisonCardProps {
@@ -77,13 +77,13 @@ export default function TvlComparisonCard({ data, isLoading }: TvlComparisonCard
           <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {formatCurrency(summary.totalTVL)}
+                {formatFinancialValue(summary.totalTVL, { style: 'compact' })}
               </div>
               <div className="text-xs text-muted-foreground">Total TVL</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(summary.averageTVL)}
+                {formatFinancialValue(summary.averageTVL, { style: 'compact' })}
               </div>
               <div className="text-xs text-muted-foreground">Average TVL</div>
             </div>
@@ -102,7 +102,7 @@ export default function TvlComparisonCard({ data, isLoading }: TvlComparisonCard
                 {summary.topTVL}
               </div>
               <div className="text-xs text-green-700 dark:text-green-300">
-                {formatCurrency(summary.topTVLValue)}
+                {formatFinancialValue(summary.topTVLValue, { style: 'compact' })}
               </div>
             </div>
             
@@ -117,7 +117,9 @@ export default function TvlComparisonCard({ data, isLoading }: TvlComparisonCard
                 {summary.topGrowth24h}
               </div>
               <div className="text-xs text-blue-700 dark:text-blue-300">
-                {summary.topGrowth24hValue >= 0 ? '+' : ''}{summary.topGrowth24hValue.toFixed(2)}%
+                {summary.topGrowth24hValue !== null && summary.topGrowth24hValue !== undefined 
+                  ? `${summary.topGrowth24hValue >= 0 ? '+' : ''}${Number(summary.topGrowth24hValue).toFixed(2)}%` 
+                  : 'N/A'}
               </div>
             </div>
           </div>
@@ -143,12 +145,14 @@ export default function TvlComparisonCard({ data, isLoading }: TvlComparisonCard
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-sm">{formatCurrency(chain.tvl)}</div>
+                  <div className="font-semibold text-sm">{formatFinancialValue(chain.tvl, { style: 'compact' })}</div>
                   <div className={cn(
                     "text-xs",
-                    chain.change24h >= 0 ? "text-green-500" : "text-red-500"
+                    chain.change24h !== null && chain.change24h !== undefined && chain.change24h >= 0 ? "text-green-500" : "text-red-500"
                   )}>
-                    {chain.change24h >= 0 ? '+' : ''}{chain.change24h.toFixed(2)}%
+                    {chain.change24h !== null && chain.change24h !== undefined 
+                      ? `${chain.change24h >= 0 ? '+' : ''}${Number(chain.change24h).toFixed(2)}%` 
+                      : 'N/A'}
                   </div>
                 </div>
               </div>
@@ -160,7 +164,9 @@ export default function TvlComparisonCard({ data, isLoading }: TvlComparisonCard
             <div className="text-xs text-muted-foreground mb-1">Market Insights</div>
             <div className="text-sm">
               Average TVL/MC Ratio: <span className="font-semibold">
-                {summary.averageTvlToMarketCapRatio.toFixed(2)}%
+                {summary.averageTvlToMarketCapRatio !== null && summary.averageTvlToMarketCapRatio !== undefined 
+                  ? `${Number(summary.averageTvlToMarketCapRatio).toFixed(2)}%` 
+                  : 'N/A'}
               </span>
             </div>
           </div>

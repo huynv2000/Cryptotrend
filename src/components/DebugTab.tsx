@@ -382,15 +382,21 @@ export default function DebugTab({ dataErrors = {} }: { dataErrors?: { [key: str
         status = 'degraded';
       }
 
-      return {
+      const result: any = {
         name,
         endpoint,
         status,
         responseTime,
         lastChecked: new Date(),
         description,
-        error: response.ok ? undefined : `HTTP ${response.status}`
+        error: null as any,
       };
+      
+      if (!response.ok) {
+        result.error = `HTTP ${response.status}`;
+      }
+      
+      return result;
     } catch (error) {
       return {
         name,
@@ -445,12 +451,13 @@ export default function DebugTab({ dataErrors = {} }: { dataErrors?: { [key: str
     }
   };
 
-  const getStatusIcon = (status: 'healthy' | 'degraded' | 'down' | 'running' | 'stopped' | 'error') => {
+  const getStatusIcon = (status: 'healthy' | 'degraded' | 'down' | 'running' | 'stopped' | 'error' | 'loading') => {
     switch (status) {
       case 'healthy':
       case 'running':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'degraded':
+      case 'loading':
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
       case 'down':
       case 'stopped':
@@ -461,12 +468,13 @@ export default function DebugTab({ dataErrors = {} }: { dataErrors?: { [key: str
     }
   };
 
-  const getStatusColor = (status: 'healthy' | 'degraded' | 'down' | 'running' | 'stopped' | 'error') => {
+  const getStatusColor = (status: 'healthy' | 'degraded' | 'down' | 'running' | 'stopped' | 'error' | 'loading') => {
     switch (status) {
       case 'healthy':
       case 'running':
         return 'text-green-600 bg-green-50 border-green-200';
       case 'degraded':
+      case 'loading':
         return 'text-yellow-600 bg-yellow-50 border-yellow-200';
       case 'down':
       case 'stopped':
@@ -709,7 +717,10 @@ export default function DebugTab({ dataErrors = {} }: { dataErrors?: { [key: str
                     {getDataSourceIcon(source.name)}
                     <span className="font-medium text-sm">{source.name}</span>
                     {!source.hasApiKey && (
-                      <Key className="h-3 w-3 text-red-500" title="Thiếu API key" />
+                      <div className="flex items-center space-x-1">
+                        <Key className="h-3 w-3 text-red-500" />
+                        <span className="text-xs text-red-500" title="Thiếu API key">!</span>
+                      </div>
                     )}
                   </div>
                   {getRealTimeIndicator(source.isRealTime)}
@@ -875,19 +886,19 @@ export default function DebugTab({ dataErrors = {} }: { dataErrors?: { [key: str
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Giá cả:</span>
-                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastPriceCollection)}</span>
+                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastPriceCollection || null)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Phân tích kỹ thuật:</span>
-                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastTechnicalCollection)}</span>
+                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastTechnicalCollection || null)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">On-chain:</span>
-                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastOnChainCollection)}</span>
+                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastOnChainCollection || null)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Phân tích AI:</span>
-                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastAIAnalysis)}</span>
+                  <span className="text-sm">{formatTime(debugInfo?.dataCollectorStats.lastAIAnalysis || null)}</span>
                 </div>
               </div>
             </div>
@@ -943,7 +954,7 @@ export default function DebugTab({ dataErrors = {} }: { dataErrors?: { [key: str
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-600">Cập nhật dữ liệu lần cuối:</span>
-                <span>{formatTime(debugInfo?.systemInfo.lastDataUpdate)}</span>
+                <span>{formatTime(debugInfo?.systemInfo.lastDataUpdate || null)}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-600">Trạng thái kết nối:</span>

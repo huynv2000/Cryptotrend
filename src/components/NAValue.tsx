@@ -87,7 +87,7 @@ export const NACard = ({
       <div className={`${getFontSizeClass('lg')} font-bold ${isNA ? 'text-gray-400' : 'text-gray-900'}`}>
         <NAValue 
           value={value} 
-          formatter={formatter} 
+          formatter={formatter || ((val: any) => val?.toString() || '')}
           naString={naString}
         />
       </div>

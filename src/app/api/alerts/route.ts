@@ -18,19 +18,19 @@ export async function GET(request: NextRequest) {
         const completeData = await cryptoService.getCompleteCryptoData(coinId)
         
         const marketData = {
-          exchangeInflow: completeData.onChain.exchangeInflow,
-          exchangeOutflow: completeData.onChain.exchangeOutflow,
-          fundingRate: completeData.derivatives.fundingRate,
-          fearGreedIndex: completeData.sentiment.fearGreedIndex,
-          openInterest: completeData.derivatives.openInterest,
-          liquidationVolume: completeData.derivatives.liquidationVolume,
-          transactionVolume: completeData.onChain.transactionVolume,
-          price: completeData.price.usd,
-          priceChange24h: completeData.price.usd_24h_change,
+          exchangeInflow: completeData.onChain.exchangeInflow || 0,
+          exchangeOutflow: completeData.onChain.exchangeOutflow || 0,
+          fundingRate: completeData.derivatives.fundingRate || 0,
+          fearGreedIndex: completeData.sentiment.fearGreedIndex || 0,
+          openInterest: completeData.derivatives.openInterest || 0,
+          liquidationVolume: completeData.derivatives.liquidationVolume || 0,
+          transactionVolume: completeData.onChain.transactionVolume || 0,
+          price: completeData.price.usd || 0,
+          priceChange24h: completeData.price.usd_24h_change || 0,
           previousData: {
-            exchangeInflow: completeData.onChain.exchangeInflow * 0.8, // mock previous data
-            exchangeOutflow: completeData.onChain.exchangeOutflow * 1.2,
-            transactionVolume: completeData.onChain.transactionVolume * 0.9
+            exchangeInflow: (completeData.onChain.exchangeInflow || 0) * 0.8, // mock previous data
+            exchangeOutflow: (completeData.onChain.exchangeOutflow || 0) * 1.2,
+            transactionVolume: (completeData.onChain.transactionVolume || 0) * 0.9
           }
         }
 

@@ -45,7 +45,6 @@ export default function TransactionVolumeCard({
         isSelected && "ring-2 ring-blue-500 bg-blue-500/5",
         spikeDetection?.isSpike && "border-orange-500/50"
       )}
-      onClick={onClick}
     />
   );
 }

@@ -62,7 +62,7 @@ export class AIAnalysisService {
   private static instance: AIAnalysisService;
   private config: AIAnalysisConfig;
   private zaiClient: any;
-  private openaiClient: OpenAI;
+  private openaiClient: any;
   private cryptoService: CryptoDataService;
   private tradingSignalService: TradingSignalService;
   private demoMode: boolean = false;
@@ -128,19 +128,14 @@ export class AIAnalysisService {
         console.warn('⚠️ Z.AI API key not configured or in demo mode');
       }
     } catch (error) {
-      console.warn('⚠️ Failed to initialize Z.AI client:', error.message);
+      console.warn('⚠️ Failed to initialize Z.AI client:', error instanceof Error ? error.message : error);
       
       // Try to initialize with environment variables as fallback
       try {
         if (AI_CONFIG.zai.baseUrl && AI_CONFIG.zai.apiKey && !AI_CONFIG.zai.apiKey.includes('demo-')) {
           // Create a custom ZAI instance with environment variables
           const ZAIClass = (await import('z-ai-web-dev-sdk')).default;
-          this.zaiClient = new ZAIClass({
-            baseUrl: AI_CONFIG.zai.baseUrl,
-            apiKey: AI_CONFIG.zai.apiKey,
-            chatId: AI_CONFIG.zai.chatId,
-            userId: AI_CONFIG.zai.userId
-          });
+          this.zaiClient = await ZAIClass.create();
           console.log('✅ Z.AI client initialized from config');
         } else {
           console.warn('⚠️ Z.AI configuration not found or in demo mode');
@@ -258,7 +253,6 @@ export class AIAnalysisService {
       ma200: marketData.technical.ma200 || 0,
       macd: marketData.technical.macd || 0,
       bollingerUpper: marketData.technical.bollingerUpper || 0,
-      bollingerMiddle: marketData.technical.bollingerMiddle || 0,
       bollingerLower: marketData.technical.bollingerLower || 0,
       
       // Sentiment Data
@@ -434,7 +428,7 @@ export class AIAnalysisService {
 
         return completion.choices[0]?.message?.content || '';
       } catch (error) {
-        console.warn(`⚠️ Z.AI API call failed:`, error.message);
+        console.warn(`⚠️ Z.AI API call failed:`, error instanceof Error ? error.message : error);
         throw error; // Will be caught by retry mechanism
       }
     } else if (provider === 'ChatGPT') {
@@ -463,7 +457,7 @@ export class AIAnalysisService {
 
         return completion.choices[0]?.message?.content || '';
       } catch (error) {
-        console.warn(`⚠️ ChatGPT API call failed:`, error.message);
+        console.warn(`⚠️ ChatGPT API call failed:`, error instanceof Error ? error.message : error);
         throw error; // Will be caught by retry mechanism
       }
     } else {
@@ -472,112 +466,137 @@ export class AIAnalysisService {
   }
 
   /**
-   * Generate demo analysis for demonstration purposes
+   * Parse AI response based on provider and analysis type
    */
-  private generateDemoAnalysis(coinId: string): ConsolidatedAIAnalysis {
-    console.log(`🤖 Generating demo analysis for ${coinId}...`);
-    
-    const coinNames: Record<string, string> = {
-      bitcoin: 'Bitcoin',
-      ethereum: 'Ethereum',
-      binancecoin: 'Binance Coin',
-      solana: 'Solana'
-    };
-
-    const coinName = coinNames[coinId] || coinId;
-    
-    // Generate sample analysis data
-    const demoAnalysis: ConsolidatedAIAnalysis = {
-      timestamp: new Date(),
-      coinId,
-      overallRecommendation: 'BUY',
-      overallConfidence: 75,
-      consensusScore: 80,
-      providers: {
-        'Z.AI': {
-          provider: 'Z.AI',
-          buyRecommendation: 'BUY',
-          confidence: 78,
-          reasoning: `Phân tích kỹ thuật cho ${coinName} cho thấy xu hướng tăng trưởng tích cực. Chỉ số RSI đang ở mức 45, cho thấy không bị quá mua. Khối lượng giao dịch tăng 20% trong 24h qua, thể hiện sự quan tâm của nhà đầu tư. MVRV ratio ở mức 1.2, cho thấy tài sản vẫn còn tiềm năng tăng trưởng.`,
-          analysisType: 'comprehensive',
-          riskLevel: 'MEDIUM',
-          breakoutPotential: 'HIGH',
-          timeframe: 'trung hạn',
-          keyInsights: [
-            'Xu hướng giá tăng trong ngắn hạn',
-            'Khối lượng giao dịch tăng mạnh',
-            'RSI cho dấu hiệu tích cực',
-            'MVRV ratio ở mức hợp lý'
-          ],
-          riskFactors: [
-            'Biến động thị trường cao',
-            'Áp lực bán ra khi giá tăng',
-            'Rủi ro điều chỉnh ngắn hạn'
-          ],
-          entryPoints: 'Khu vực giá hiện tại, chờ đợi pullback nhẹ',
-          exitPoints: 'Khu vực kháng cự tiếp theo',
-          stopLoss: '5% dưới giá nhập lệnh',
-          takeProfit: '15-20% trên giá nhập lệnh'
+  private parseAIResponse(response: string, provider: string, analysisType: string): AIAnalysisResult {
+    // Simple parsing logic - in real implementation this would be more sophisticated
+    try {
+      // Try to parse as JSON first
+      const parsed = JSON.parse(response);
+      return {
+        provider: provider as 'Z.AI' | 'ChatGPT',
+        trendAnalysis: parsed.trendAnalysis || response,
+        buyRecommendation: parsed.buyRecommendation || 'HOLD',
+        confidence: parsed.confidence || 50,
+        reasoning: parsed.reasoning || response,
+        breakoutPotential: parsed.breakoutPotential || 'MEDIUM',
+        breakoutReasoning: parsed.breakoutReasoning || 'Breakout analysis pending',
+        keyLevels: {
+          support: parsed.keyLevels?.support || [],
+          resistance: parsed.keyLevels?.resistance || []
         },
-        'ChatGPT': {
-          provider: 'ChatGPT',
-          buyRecommendation: 'BUY',
-          confidence: 72,
-          reasoning: `${coinName} đang cho thấy các dấu hiệu kỹ thuật tích cực. Giá đang giao dịch trên đường trung bình động 50 ngày, khẳng định xu hướng tăng. Chỉ báo MACD cho thấy động lượng tăng, trong khi Bollinger Bands mở rộng, cho thấy biến động tăng. Dữ liệu on-chain cho thấy số lượng địa chỉ hoạt động tăng 15%, thể hiện sự quan tâm của người dùng.`,
-          analysisType: 'comprehensive',
-          riskLevel: 'MEDIUM',
-          breakoutPotential: 'HIGH',
-          timeframe: 'trung hạn',
-          keyInsights: [
-            'Giá trên MA50, xu hướng tăng',
-            'MACD cho thấy động lượng tích cực',
-            'Số địa chỉ hoạt động tăng',
-            'Biến động tăng, cơ hội breakout'
-          ],
-          riskFactors: [
-            'Thị trường biến động cao',
-            'Rủi ro điều chỉnh kỹ thuật',
-            'Áp lực bán khi giá tăng'
-          ],
-          entryPoints: 'Khu vực hỗ trợ hiện tại',
-          exitPoints: 'Kháng cự kỹ thuật tiếp theo',
-          stopLoss: '4-6% dưới giá nhập lệnh',
-          takeProfit: '12-18% trên giá nhập lệnh'
-        }
-      },
-      summary: {
-        trendAnalysis: `${coinName} đang trong xu hướng tăng với các chỉ báo kỹ thuật tích cực. Khối lượng giao dịch tăng và sự quan tâm của nhà đầu tư cho thấy tiềm năng tiếp tục tăng trưởng.`,
-        keyInsights: [
-          'Xu hướng giá tăng ngắn hạn',
-          'Khối lượng giao dịch tăng mạnh',
-          'Chỉ báo kỹ thuật tích cực',
-          'Dữ liệu on-chain tích cực',
-          'Tiềm năng breakout cao'
-        ],
-        riskAssessment: 'Mức độ rủi ro trung bình. Thị trường biến động nhưng có cơ sở kỹ thuật vững chắc. Cần quản lý rủi ro thích hợp.',
-        opportunityHighlights: [
-          'Cơ hội mua vào ở mức giá hiện tại',
-          'Tiềm năng lợi nhuận 15-20%',
-          'Xu hướng tăng dài hạn',
-          'Sự quan tâm của nhà đầu tư tăng'
-        ]
-      },
-      marketRegime: 'BULLISH',
-      timeHorizon: 'MEDIUM_TERM',
-      actionPlan: {
-        immediate: 'Mua vào tại mức giá hiện tại với quản lý rủi ro chặt chẽ',
-        shortTerm: 'Giữ vị thế và chờ đợi breakout qua kháng cự',
-        mediumTerm: 'Chốt lời dần khi đạt mục tiêu 15-20% lợi nhuận'
-      }
-    };
-
-    console.log(`✅ Demo analysis generated for ${coinId}`);
-    return demoAnalysis;
+        timeHorizon: parsed.timeHorizon || 'MEDIUM_TERM',
+        riskFactors: parsed.riskFactors || [],
+        opportunities: parsed.opportunities || [],
+        marketRegime: parsed.marketRegime || 'RANGING'
+      };
+    } catch (error) {
+      // If JSON parsing fails, return a basic response
+      return {
+        provider: provider as 'Z.AI' | 'ChatGPT',
+        trendAnalysis: response,
+        buyRecommendation: 'HOLD',
+        confidence: 50,
+        reasoning: response,
+        breakoutPotential: 'MEDIUM',
+        breakoutReasoning: 'Breakout analysis pending',
+        keyLevels: {
+          support: [],
+          resistance: []
+        },
+        timeHorizon: 'MEDIUM_TERM',
+        riskFactors: ['Parsing failed'],
+        opportunities: [],
+        marketRegime: 'RANGING'
+      };
+    }
   }
 
   /**
-   * Update configuration
+   * Consolidate results from multiple AI providers
    */
+  private consolidateResults(context: AIPromptContext, providerResults: Record<string, AIAnalysisResult>): ConsolidatedAIAnalysis {
+    // Simple consolidation logic - in real implementation this would be more sophisticated
+    const providers = Object.keys(providerResults);
+    
+    if (providers.length === 0) {
+      // Return default analysis if no providers succeeded
+      return {
+        timestamp: new Date(),
+        coinId: context.coinId,
+        overallRecommendation: 'HOLD',
+        overallConfidence: 50,
+        consensusScore: 0,
+        providers: {},
+        summary: {
+          trendAnalysis: 'Insufficient data for analysis',
+          keyInsights: ['No AI providers available'],
+          riskAssessment: 'Unable to assess risk',
+          opportunityHighlights: []
+        },
+        marketRegime: 'RANGING',
+        timeHorizon: 'MEDIUM_TERM',
+        actionPlan: {
+          immediate: 'Wait for more data',
+          shortTerm: 'Monitor market conditions',
+          mediumTerm: 'Reassess when AI providers are available'
+        }
+      };
+    }
+
+    // For now, use the first available provider's result
+    const firstProvider = providers[0];
+    const result = providerResults[firstProvider];
+
+    return {
+      timestamp: new Date(),
+      coinId: context.coinId,
+      overallRecommendation: result.buyRecommendation || 'HOLD',
+      overallConfidence: result.confidence || 50,
+      consensusScore: 100, // Only one provider
+      providers: providerResults,
+      summary: {
+        trendAnalysis: result.trendAnalysis || 'Analysis pending',
+        keyInsights: result.opportunities || [],
+        riskAssessment: result.riskFactors.join(', ') || 'Risk assessment pending',
+        opportunityHighlights: result.opportunities || []
+      },
+      marketRegime: result.marketRegime || 'RANGING',
+      timeHorizon: result.timeHorizon || 'MEDIUM_TERM',
+      actionPlan: {
+        immediate: 'Monitor market based on ' + result.buyRecommendation,
+        shortTerm: 'Continue monitoring ' + result.buyRecommendation + ' signals',
+        mediumTerm: 'Reassess ' + result.buyRecommendation + ' position in medium term'
+      }
+    };
+  }
+
+  /**
+   * Generate demo analysis for demonstration purposes
+   */
+  private generateDemoAnalysis(coinId: string): ConsolidatedAIAnalysis {
+    return {
+      timestamp: new Date(),
+      coinId,
+      overallRecommendation: "HOLD",
+      overallConfidence: 50,
+      consensusScore: 50,
+      providers: {},
+      summary: {
+        trendAnalysis: "Demo analysis",
+        keyInsights: ["Demo mode"],
+        riskAssessment: "Unknown",
+        opportunityHighlights: []
+      },
+      marketRegime: "RANGING",
+      timeHorizon: "MEDIUM_TERM",
+      actionPlan: {
+        immediate: "Wait",
+        shortTerm: "Monitor",
+        mediumTerm: "Reassess"
+      }
+    };
+  }
   updateConfig(newConfig: Partial<AIAnalysisConfig>): void {
     this.config = { ...this.config, ...newConfig };
   }

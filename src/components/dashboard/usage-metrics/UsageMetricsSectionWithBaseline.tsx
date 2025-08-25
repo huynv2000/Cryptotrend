@@ -84,7 +84,7 @@ export default function UsageMetricsSectionWithBaseline({
               Key performance indicators for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading metrics..." />
+          <LoadingState message="Loading metrics..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -175,7 +175,6 @@ export default function UsageMetricsSectionWithBaseline({
                     "cursor-pointer hover:shadow-lg transition-all",
                     selectedMetric === metric.key && "ring-2 ring-blue-500 bg-blue-500/5"
                   )}
-                  onClick={() => handleMetricClick(metric.key)}
                 />
               );
             })}

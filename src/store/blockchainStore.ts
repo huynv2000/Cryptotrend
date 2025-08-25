@@ -20,7 +20,7 @@ interface BlockchainState extends UIState {
   // Data State
   usageMetrics: UsageMetrics | null;
   tvlMetrics: TVLMetrics | null;
-  enhancedTvlMetrics: any | null;
+  
   cashflowMetrics: CashflowMetrics | null;
   marketOverview: MarketOverview | null;
   aiAnalysis: AIAnalysis | null;
@@ -33,7 +33,6 @@ interface BlockchainState extends UIState {
   // Data Actions
   setUsageMetrics: (metrics: UsageMetrics | null) => void;
   setTVLMetrics: (metrics: TVLMetrics | null) => void;
-  setEnhancedTVLMetrics: (metrics: any | null) => void;
   setCashflowMetrics: (metrics: CashflowMetrics | null) => void;
   setMarketOverview: (overview: MarketOverview | null) => void;
   setAIAnalysis: (analysis: AIAnalysis | null) => void;
@@ -89,7 +88,6 @@ export const useBlockchainStore = create<BlockchainState>()(
         // Data State
         usageMetrics: null,
         tvlMetrics: null,
-        enhancedTvlMetrics: null,
         cashflowMetrics: null,
         marketOverview: null,
         aiAnalysis: null,
@@ -114,10 +112,6 @@ export const useBlockchainStore = create<BlockchainState>()(
         
         setTVLMetrics: (metrics) => {
           set({ tvlMetrics: metrics, error: null });
-        },
-        
-        setEnhancedTVLMetrics: (metrics) => {
-          set({ enhancedTvlMetrics: metrics, error: null });
         },
         
         setMarketOverview: (overview) => {
@@ -444,7 +438,6 @@ export const useBlockchainStore = create<BlockchainState>()(
           set({
             usageMetrics: null,
             tvlMetrics: null,
-            enhancedTvlMetrics: null,
             cashflowMetrics: null,
             marketOverview: null,
             aiAnalysis: null,

@@ -17,7 +17,7 @@ interface MarketMetrics {
   marketCap: number;
   fearGreedIndex: number;
   rsi: number;
-  signal: string;
+  type: string;
 }
 
 interface AIAnalysis {
@@ -34,7 +34,7 @@ interface DashboardData {
 }
 
 interface TradingSignal {
-  signal: 'BUY' | 'SELL' | 'HOLD' | 'STRONG_BUY' | 'STRONG_SELL';
+  type: 'BUY' | 'SELL' | 'HOLD' | 'STRONG_BUY' | 'STRONG_SELL';
   confidence: number;
   reasoning: string;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -108,7 +108,7 @@ export default function Home() {
         marketCap: 2321404684888,
         fearGreedIndex: 67,
         rsi: 58.5,
-        signal: 'BUY'
+        type: 'BUY'
       };
 
       const mockAIAnalysis: AIAnalysis = {
@@ -162,7 +162,7 @@ export default function Home() {
         marketCap: dashboardData.price?.usd_market_cap || 0,
         fearGreedIndex: dashboardData.sentiment?.fearGreedIndex || 50,
         rsi: dashboardData.technical?.rsi || 50,
-        signal: signalData.signal?.signal || 'HOLD'
+        type: signalData.signal?.type || 'HOLD'
       };
 
       // Fetch AI analysis using real data
@@ -285,7 +285,7 @@ export default function Home() {
       marketCap: 2321404684888,
       fearGreedIndex: 67,
       rsi: 58.5,
-      signal: 'BUY'
+      type: 'BUY'
     };
 
     const fallbackAIAnalysis: AIAnalysis = {
@@ -370,7 +370,7 @@ export default function Home() {
     };
 
     const fallbackTradingSignal: TradingSignal = {
-      signal: 'BUY',
+      type: 'BUY',
       confidence: 78,
       reasoning: 'Tín hiệu MUA: MVRV ở mức hợp lý, Fear & Greed ở vùng trung lập, funding rate dương thấp. Thị trường đang cho dấu hiệu tích lũy.',
       riskLevel: 'MEDIUM',
@@ -448,8 +448,8 @@ export default function Home() {
     };
   };
 
-  const getSignalColor = (signal: string) => {
-    switch (signal) {
+  const getSignalColor = (type: string) => {
+    switch (type) {
       case 'STRONG_BUY': return 'bg-green-600 text-white';
       case 'BUY': return 'bg-green-500 text-white';
       case 'HOLD': return 'bg-yellow-500 text-white';

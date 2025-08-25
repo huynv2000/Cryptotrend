@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { LoadingState } from '@/components/LoadingState';
-import { cn, formatNumber, formatCurrency, formatPercentage } from '@/lib/utils';
+import { cn, formatNumber, formatCurrency, formatPercent } from '@/lib/utils';
 import type { BlockchainValue, TimeframeValue } from '@/lib/types';
 
 interface AdvancedTVLMetricsData {
@@ -216,7 +216,7 @@ export default function AdvancedTVLMetricsSection({
       case 'currency':
         return formatCurrency(value);
       case 'percentage':
-        return formatPercentage(value);
+        return formatPercent(value);
       case 'ratio':
         return value.toFixed(4);
       case 'score':
@@ -238,7 +238,7 @@ export default function AdvancedTVLMetricsSection({
               TVL Velocity & Efficiency analysis for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading advanced metrics..." />
+          <LoadingState message="Loading advanced metrics..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (

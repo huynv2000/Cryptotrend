@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     
     // If no enhanced TVL data or outdated, try to fetch fresh data
     const now = new Date();
-    let freshEnhancedTVLData = null;
+    let freshEnhancedTVLData: any = null;
     
     if (!enhancedTVLData || isDataOutdated(enhancedTVLData.timestamp, now)) {
       try {
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     };
     
     // Get context data for comparison
-    let contextData = null;
+    let contextData: any = null;
     try {
       // Get recent enhanced TVL data for comparison
       const recentMetrics = await db.enhancedTVLMetric.findMany({
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Get benchmark data for market comparison
-    let benchmarkData = null;
+    let benchmarkData: any = null;
     try {
       // Get average metrics across all cryptocurrencies for comparison
       const allRecentMetrics = await db.enhancedTVLMetric.findMany({
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
           where: { isActive: true }
         });
         
-        const results = [];
+        const results: any[] = [];
         for (const crypto of activeCryptos) {
           try {
             const result = await enhancedTVLService.storeEnhancedTVLMetrics(crypto.coinGeckoId);
@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
             results.push({
               coinId: crypto.coinGeckoId,
               success: false,
-              error: error.message
+              error: error instanceof Error ? error.message : String(error)
             });
           }
         }
@@ -290,6 +290,7 @@ function calculateTrend(values: number[]): 'increasing' | 'decreasing' | 'stable
   
   const first = values[0];
   const last = values[values.length - 1];
+  if (!first || !last) return 'stable';
   const change = ((last - first) / first) * 100;
   
   if (Math.abs(change) < 2) {

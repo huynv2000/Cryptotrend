@@ -29,7 +29,7 @@ interface UseIntersectionObserverOptions {
 }
 
 function useIntersectionObserver(
-  elementRef: React.RefObject<Element>,
+  elementRef: React.RefObject<Element | null>,
   options: UseIntersectionObserverOptions = {}
 ): IntersectionObserverEntry | null {
   const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null);
@@ -40,7 +40,9 @@ function useIntersectionObserver(
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setEntry(entry);
+        if (entry) {
+          setEntry(entry);
+        }
       },
       {
         threshold: options.threshold || 0.1,

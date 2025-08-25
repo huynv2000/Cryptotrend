@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       data: fallbackAnalysis,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
   }
 }
@@ -192,7 +192,7 @@ function extractTimeframe(text: string): string {
 
 function extractRiskFactors(text: string): string[] {
   const riskKeywords = ['rủi ro', 'risk', 'nguy hiểm', 'cảnh báo', 'thận trọng'];
-  const factors = [];
+  const factors: string[] = [];
   
   if (riskKeywords.some(keyword => text.toLowerCase().includes(keyword))) {
     factors.push('Cần theo dõi sát thị trường');

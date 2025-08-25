@@ -17,17 +17,17 @@ export async function GET(request: NextRequest) {
         const completeData = await cryptoService.getCompleteCryptoData(coinId)
         
         const marketData = {
-          mvrv: completeData.onChain.mvrv,
-          fearGreedIndex: completeData.sentiment.fearGreedIndex,
-          fundingRate: completeData.derivatives.fundingRate,
-          sopr: completeData.onChain.sopr,
-          rsi: completeData.technical.rsi,
-          nupl: completeData.onChain.nupl,
-          transactionVolume: completeData.onChain.transactionVolume,
-          previousTransactionVolume: completeData.onChain.transactionVolume * 0.95, // mock previous data
-          openInterest: completeData.derivatives.openInterest,
-          socialSentiment: completeData.sentiment.social?.twitterSentiment,
-          newsSentiment: completeData.sentiment.news?.newsSentiment
+          mvrv: completeData.onChain?.mvrv || 0,
+          fearGreedIndex: completeData.sentiment?.fearGreedIndex || 0,
+          fundingRate: completeData.derivatives?.fundingRate || 0,
+          sopr: completeData.onChain?.sopr || 0,
+          rsi: completeData.technical?.rsi || 0,
+          nupl: completeData.onChain?.nupl || 0,
+          transactionVolume: completeData.onChain?.transactionVolume || 0,
+          previousTransactionVolume: (completeData.onChain?.transactionVolume || 0) * 0.95, // mock previous data
+          openInterest: completeData.derivatives?.openInterest || 0,
+          socialSentiment: completeData.sentiment?.social?.twitterSentiment || 0,
+          newsSentiment: completeData.sentiment?.news?.newsSentiment || 0
         }
 
         const signal = tradingSignalService.generateSignal(marketData)

@@ -74,8 +74,8 @@ export function UsageMetrics({ metrics, timeRange, onTimeRangeChange }: UsageMet
   const renderSparkline = (data: number[]) => {
     if (!data || data.length === 0) return null;
     
-    const trend = data[data.length - 1] > data[0] ? 'up' : 
-                  data[data.length - 1] < data[0] ? 'down' : 'stable';
+    const trend = (data[data.length - 1] || 0) > (data[0] || 0) ? 'up' : 
+                  (data[data.length - 1] || 0) < (data[0] || 0) ? 'down' : 'stable';
     
     return (
       <MiniChart 
@@ -156,7 +156,7 @@ export function UsageMetrics({ metrics, timeRange, onTimeRangeChange }: UsageMet
                 <div className={`flex items-center space-x-1 ${getTrendColor(metric.trend)}`}>
                   {getTrendIcon(metric.trend)}
                   <span className="text-sm font-medium">
-                    {metric.changePercent != null ? (metric.changePercent > 0 ? '+' : '') + metric.changePercent.toFixed(2) + '%' : 'N/A'}
+                    {metric.changePercent > 0 ? '+' : ''}{metric.changePercent.toFixed(2)}%
                   </span>
                 </div>
               </div>

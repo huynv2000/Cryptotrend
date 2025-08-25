@@ -41,7 +41,7 @@ export default function MarketAnalysisSection({
               Comprehensive market analysis for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading market analysis..." />
+          <LoadingState message="Loading market analysis..." />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[...Array(4)].map((_, i) => (
@@ -103,15 +103,15 @@ export default function MarketAnalysisSection({
           {/* Market Status */}
           {marketData && (
             <Badge 
-              variant={marketData.priceChange24h >= 0 ? 'default' : 'destructive'}
+              variant={marketData.priceChange24h.changePercent >= 0 ? 'default' : 'destructive'}
               className="text-xs"
             >
-              {marketData.priceChange24h >= 0 ? (
+              {marketData.priceChange24h.changePercent >= 0 ? (
                 <TrendingUp className="h-3 w-3 mr-1" />
               ) : (
                 <TrendingDown className="h-3 w-3 mr-1" />
               )}
-              {marketData.priceChange24h >= 0 ? 'Bullish' : 'Bearish'}
+              {marketData.priceChange24h.changePercent >= 0 ? 'Bullish' : 'Bearish'}
             </Badge>
           )}
         </div>
@@ -125,7 +125,9 @@ export default function MarketAnalysisSection({
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold">
-                    ${((marketData.marketCap?.value || 0) / 1e9).toFixed(1)}B
+                    ${marketData.marketCap?.value !== null && marketData.marketCap?.value !== undefined 
+                      ? Number((marketData.marketCap.value || 0) / 1e9).toFixed(1) 
+                      : 'N/A'}B
                   </div>
                   <div className="text-xs text-muted-foreground">Market Cap</div>
                 </div>
@@ -136,7 +138,9 @@ export default function MarketAnalysisSection({
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold">
-                    {marketData.dominance?.value.toFixed(1)}%
+                    {marketData.dominance?.value !== null && marketData.dominance?.value !== undefined 
+                      ? Number(marketData.dominance.value).toFixed(1) 
+                      : 'N/A'}%
                   </div>
                   <div className="text-xs text-muted-foreground">Dominance</div>
                 </div>
@@ -147,7 +151,9 @@ export default function MarketAnalysisSection({
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold">
-                    ${((marketData.volume24h?.value || 0) / 1e9).toFixed(1)}B
+                    ${marketData.volume24h?.value !== null && marketData.volume24h?.value !== undefined 
+                      ? Number((marketData.volume24h.value || 0) / 1e9).toFixed(1) 
+                      : 'N/A'}B
                   </div>
                   <div className="text-xs text-muted-foreground">Volume 24h</div>
                 </div>
@@ -158,7 +164,9 @@ export default function MarketAnalysisSection({
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold">
-                    {marketData.fearGreedIndex?.value.toFixed(0) || 'N/A'}
+                    {marketData.fearGreedIndex?.value !== null && marketData.fearGreedIndex?.value !== undefined 
+                      ? Number(marketData.fearGreedIndex.value).toFixed(0) 
+                      : 'N/A'}
                   </div>
                   <div className="text-xs text-muted-foreground">Fear & Greed</div>
                 </div>

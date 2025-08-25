@@ -5,6 +5,5 @@ export { VolumeService } from './volume-service'
 export { rateLimiter } from './rate-limiter'
 export { errorHandler } from './error-handler'
 
-// Create singleton instance for easy access
-import { DataCollector } from './data-collector'
-export const dataCollector = DataCollector.getInstance()
+// Note: dataCollector instance is now exported directly from data-collector.ts
+// But we're not importing it here to avoid top-level initialization issues

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     
     // If no TVL data or outdated, try to fetch fresh data
     const now = new Date();
-    let freshTVLData = null;
+    let freshTVLData: any = null;
     
     if (!tvlData || isDataOutdated(tvlData.timestamp, now)) {
       try {
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     };
     
     // Get additional DeFi context
-    let defiContext = null;
+    let defiContext: any = null;
     try {
       defiContext = await defiLlamaService.getLatestDeFiMetrics();
     } catch (error) {

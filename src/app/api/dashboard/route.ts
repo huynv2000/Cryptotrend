@@ -9,6 +9,17 @@ function isDataOutdated(timestamp: Date, now: Date): boolean {
   return hoursDiff > 1; // Consider data outdated if older than 1 hour
 }
 
+// Helper function to get Fear & Greed classification from index
+function getClassificationFromIndex(index: number | null): string | null {
+  if (index === null) return null;
+  
+  if (index >= 0 && index <= 24) return 'Extreme Fear';
+  if (index <= 44) return 'Fear';
+  if (index <= 55) return 'Neutral';
+  if (index <= 75) return 'Greed';
+  return 'Extreme Greed';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -154,29 +165,29 @@ export async function GET(request: NextRequest) {
       },
       sentiment: sentimentData ? {
         fearGreedIndex: sentimentData.fearGreedIndex,
-        fearGreedClassification: sentimentData.fearGreedClassification,
+        fearGreedClassification: getClassificationFromIndex(sentimentData.fearGreedIndex),
         social: {
           twitterSentiment: sentimentData.socialSentiment,
-          redditSentiment: sentimentData.redditSentiment,
-          socialVolume: sentimentData.socialVolume,
-          engagementRate: sentimentData.engagementRate,
-          influencerSentiment: sentimentData.influencerSentiment,
-          trendingScore: sentimentData.trendingScore
+          redditSentiment: sentimentData.socialSentiment,
+          socialVolume: 0,
+          engagementRate: 0,
+          influencerSentiment: sentimentData.socialSentiment,
+          trendingScore: 0
         },
         news: {
           newsSentiment: sentimentData.newsSentiment,
-          newsVolume: sentimentData.newsVolume,
-          positiveNewsCount: sentimentData.positiveNewsCount,
-          negativeNewsCount: sentimentData.negativeNewsCount,
-          neutralNewsCount: sentimentData.neutralNewsCount,
-          sentimentScore: sentimentData.sentimentScore,
-          buzzScore: sentimentData.buzzScore
+          newsVolume: 0,
+          positiveNewsCount: 0,
+          negativeNewsCount: 0,
+          neutralNewsCount: 0,
+          sentimentScore: sentimentData.newsSentiment,
+          buzzScore: 0
         },
         googleTrends: {
-          trendsScore: sentimentData.trendsScore,
-          searchVolume: sentimentData.searchVolume,
-          trendingKeywords: sentimentData.trendingKeywords ? sentimentData.trendingKeywords.split(',') : [],
-          trendDirection: sentimentData.trendDirection
+          trendsScore: sentimentData.googleTrends,
+          searchVolume: 0,
+          trendingKeywords: [],
+          trendDirection: 'STABLE'
         },
         last_updated: sentimentData.timestamp,
         is_outdated: isDataOutdated(sentimentData.timestamp, now),

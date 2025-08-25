@@ -192,6 +192,34 @@ class AILogger {
   }
   
   /**
+   * Log an error message
+   */
+  error(message: string, error?: any): void {
+    console.error(`❌ [${this.constructor.name}] ${message}`, error);
+  }
+  
+  /**
+   * Log a warning message
+   */
+  warn(message: string, data?: any): void {
+    console.warn(`⚠️ [${this.constructor.name}] ${message}`, data);
+  }
+  
+  /**
+   * Log an info message
+   */
+  info(message: string, data?: any): void {
+    console.info(`ℹ️ [${this.constructor.name}] ${message}`, data);
+  }
+  
+  /**
+   * Log a debug message
+   */
+  debug(message: string, data?: any): void {
+    console.debug(`🔍 [${this.constructor.name}] ${message}`, data);
+  }
+  
+  /**
    * Print summary to console
    */
   printSummary(): void {

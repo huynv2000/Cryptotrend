@@ -417,7 +417,7 @@ export function CoinManagementPanel({ userId }: CoinManagementPanelProps) {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onCoinAdded={loadCoins}
-        userId={userId}
+        userId={userId || ''}
       />
     </div>
   )

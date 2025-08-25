@@ -10,14 +10,16 @@ import { memoryOptimizer, MemoryUtils } from '@/lib/memory-optimizer';
 import DashboardHeader from './header/DashboardHeader';
 import UsageMetricsSectionWithBaseline from './usage-metrics/UsageMetricsSectionWithBaseline';
 import TVLMetricsSectionWithBaseline from './tvl-metrics/TVLMetricsSectionWithBaseline';
-import EnhancedTVLMetricsSection from './tvl-metrics/EnhancedTVLMetricsSection';
+
 import TvlComparisonCard from './tvl-metrics/TvlComparisonCard';
 import CashFlowSection from './cashflow-metrics/CashFlowSection';
 import MarketAnalysisSection from './market-analysis/MarketAnalysisSection';
-import TVLHistoryChartOptimized from './tvl-history/TVLHistoryChartOptimized';
+import DisplayPreferencesPanel from './ui/DisplayPreferencesPanel';
+
 import { LoadingState } from '@/components/LoadingState';
 import { cn } from '@/lib/utils';
-import type { BlockchainValue, TimeframeValue } from '@/lib/types';
+import type { BlockchainValue, TimeframeValue, UsageMetrics, TVLMetrics, CashflowMetrics, MarketOverview, AIAnalysis } from '@/lib/types';
+import { useDisplayPreferences } from '@/contexts/DisplayPreferencesContext';
 
 interface BlockchainDashboardProps {
   initialBlockchain?: BlockchainValue;
@@ -30,6 +32,7 @@ export default function BlockchainDashboard({
 }: BlockchainDashboardProps) {
   const { theme, setTheme } = useTheme();
   const store = useBlockchainStore();
+  const { preferences, isPreferencesPanelOpen, setPreferencesPanelOpen } = useDisplayPreferences();
   const [mounted, setMounted] = useState(false);
   
   // Initialize store values
@@ -111,7 +114,7 @@ export default function BlockchainDashboard({
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingState text="Initializing dashboard..." />
+        <LoadingState message="Initializing dashboard..." />
       </div>
     );
   }
@@ -142,6 +145,9 @@ export default function BlockchainDashboard({
                 <button className="w-full text-left px-3 py-2 rounded-md bg-primary text-primary-foreground">
                   Dashboard
                 </button>
+                <a href="/portfolio" className="w-full text-left px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground block">
+                  Portfolio
+                </a>
                 <button className="w-full text-left px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground">
                   Analytics
                 </button>
@@ -158,9 +164,9 @@ export default function BlockchainDashboard({
         
         {/* Main Dashboard Content */}
         <main className="flex-1">
-          {isLoading && !data.usageMetrics ? (
+          {isLoading && !data.usageMetrics && !data.tvlMetrics && !data.tvlComparison && !data.cashflowMetrics && !data.marketOverview && !data.aiAnalysis ? (
             <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-              <LoadingState text="Loading dashboard data..." />
+              <LoadingState message="Loading dashboard data..." />
             </div>
           ) : isError ? (
             <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -183,7 +189,7 @@ export default function BlockchainDashboard({
               <UsageMetricsSectionWithBaseline
                 blockchain={selectedBlockchain}
                 timeframe={selectedTimeframe}
-                data={data.usageMetrics}
+                data={data.usageMetrics as UsageMetrics | null}
                 isLoading={isLoading}
               />
               
@@ -191,28 +197,11 @@ export default function BlockchainDashboard({
               <TVLMetricsSectionWithBaseline
                 blockchain={selectedBlockchain}
                 timeframe={selectedTimeframe}
-                data={data.tvlMetrics}
+                data={data.tvlMetrics as TVLMetrics | null}
                 isLoading={isLoading}
               />
               
-              {/* Enhanced TVL Metrics Section */}
-              <EnhancedTVLMetricsSection
-                blockchain={selectedBlockchain}
-                timeframe={selectedTimeframe}
-                data={data.enhancedTvlMetrics}
-                isLoading={isLoading}
-              />
-              
-              {/* TVL History Chart */}
-              <TVLHistoryChartOptimized
-                coinId={selectedBlockchain}
-                coinName={selectedBlockchain.charAt(0).toUpperCase() + selectedBlockchain.slice(1)}
-                timeframe={selectedTimeframe === '24h' ? '24H' : selectedTimeframe === '7d' ? '7D' : selectedTimeframe === '30d' ? '30D' : '90D'}
-                height={400}
-                showControls={true}
-                autoRefresh={true}
-              />
-              
+  
               {/* TVL Comparison Card */}
               <TvlComparisonCard
                 data={data.tvlComparison}
@@ -223,15 +212,15 @@ export default function BlockchainDashboard({
               <CashFlowSection
                 blockchain={selectedBlockchain}
                 timeframe={selectedTimeframe}
-                data={data.cashflowMetrics}
+                data={data.cashflowMetrics as CashflowMetrics | null}
                 isLoading={isLoading}
               />
               
               {/* Market Analysis Section */}
               <MarketAnalysisSection
                 blockchain={selectedBlockchain}
-                marketData={data.marketOverview}
-                aiData={data.aiAnalysis}
+                marketData={data.marketOverview as MarketOverview | null}
+                aiData={data.aiAnalysis as AIAnalysis | null}
                 isLoading={isLoading}
               />
               
@@ -270,6 +259,16 @@ export default function BlockchainDashboard({
           )}
         </main>
       </div>
+      
+      {/* Display Preferences Panel */}
+      <DisplayPreferencesPanel
+        isOpen={isPreferencesPanelOpen}
+        onToggle={() => setPreferencesPanelOpen(!isPreferencesPanelOpen)}
+        onPreferencesChange={(newPreferences) => {
+          // Handle preferences changes if needed
+          console.log('Preferences updated:', newPreferences);
+        }}
+      />
     </div>
   );
 }

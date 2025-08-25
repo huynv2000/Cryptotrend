@@ -74,17 +74,8 @@ export async function GET(request: NextRequest) {
           whaleHoldingsPercentage: enhancedMetrics.whaleHoldingsPercentage,
           retailHoldingsPercentage: enhancedMetrics.retailHoldingsPercentage,
           exchangeHoldingsPercentage: enhancedMetrics.exchangeHoldingsPercentage,
-          networkRevenue: enhancedMetrics.networkRevenue,
-          tvl: enhancedMetrics.tvl,
-          stablecoinSupply: enhancedMetrics.stablecoinSupply,
-          largeTransactionsVolume: enhancedMetrics.largeTransactionsVolume,
-          realizedCap: enhancedMetrics.realizedCap,
-          dexVolume: enhancedMetrics.dexVolume,
-          stakingInflow: enhancedMetrics.stakingInflow,
-          validatorCount: enhancedMetrics.validatorCount,
-          hashRate: enhancedMetrics.hashRate,
-          confidence: enhancedMetrics.confidence,
-          source: enhancedMetrics.source
+          // Only using available properties from schema
+          timestamp: new Date()
         },
         create: {
           cryptoId: crypto.id,
@@ -98,18 +89,7 @@ export async function GET(request: NextRequest) {
           transactionVolume: enhancedMetrics.transactionVolume,
           whaleHoldingsPercentage: enhancedMetrics.whaleHoldingsPercentage,
           retailHoldingsPercentage: enhancedMetrics.retailHoldingsPercentage,
-          exchangeHoldingsPercentage: enhancedMetrics.exchangeHoldingsPercentage,
-          networkRevenue: enhancedMetrics.networkRevenue,
-          tvl: enhancedMetrics.tvl,
-          stablecoinSupply: enhancedMetrics.stablecoinSupply,
-          largeTransactionsVolume: enhancedMetrics.largeTransactionsVolume,
-          realizedCap: enhancedMetrics.realizedCap,
-          dexVolume: enhancedMetrics.dexVolume,
-          stakingInflow: enhancedMetrics.stakingInflow,
-          validatorCount: enhancedMetrics.validatorCount,
-          hashRate: enhancedMetrics.hashRate,
-          confidence: enhancedMetrics.confidence,
-          source: enhancedMetrics.source
+          exchangeHoldingsPercentage: enhancedMetrics.exchangeHoldingsPercentage
         }
       });
 
@@ -120,10 +100,10 @@ export async function GET(request: NextRequest) {
 
     // Calculate rolling averages for key metrics
     const [daaRolling, newAddressesRolling, transactionsRolling, volumeRolling] = await Promise.all([
-      rollingCalculator.calculateRollingAverages(crypto.id, 'activeAddresses'),
-      rollingCalculator.calculateRollingAverages(crypto.id, 'newAddresses'),
-      rollingCalculator.calculateRollingAverages(crypto.id, 'dailyTransactions'),
-      rollingCalculator.calculateRollingAverages(crypto.id, 'transactionVolume')
+      rollingCalculator.calculateRollingAverages(parseInt(crypto.id), 'activeAddresses'),
+      rollingCalculator.calculateRollingAverages(parseInt(crypto.id), 'newAddresses'),
+      rollingCalculator.calculateRollingAverages(parseInt(crypto.id), 'dailyTransactions'),
+      rollingCalculator.calculateRollingAverages(parseInt(crypto.id), 'transactionVolume')
     ]);
 
     // Get historical data for change calculations
@@ -186,20 +166,20 @@ export async function GET(request: NextRequest) {
       },
       
       dailyTransactions: {
-        value: enhancedMetrics.dailyTransactions,
-        absoluteValue: enhancedMetrics.dailyTransactions,
-        formattedValue: formatNumber(enhancedMetrics.dailyTransactions),
-        change: previousData ? enhancedMetrics.dailyTransactions - (previousData.dailyTransactions || 0) : 0,
-        changePercent: previousData && previousData.dailyTransactions ? 
-          ((enhancedMetrics.dailyTransactions - previousData.dailyTransactions) / previousData.dailyTransactions) * 100 : 0,
-        trend: enhancedMetrics.dailyTransactions > (previousData?.dailyTransactions || 0) ? 'up' : 
-               enhancedMetrics.dailyTransactions < (previousData?.dailyTransactions || 0) ? 'down' : 'stable',
+        value: enhancedMetrics.transactionVolume,
+        absoluteValue: enhancedMetrics.transactionVolume,
+        formattedValue: formatNumber(enhancedMetrics.transactionVolume),
+        change: previousData ? enhancedMetrics.transactionVolume - (previousData.transactionVolume || 0) : 0,
+        changePercent: previousData && previousData.transactionVolume ? 
+          ((enhancedMetrics.transactionVolume - previousData.transactionVolume) / previousData.transactionVolume) * 100 : 0,
+        trend: enhancedMetrics.transactionVolume > (previousData?.transactionVolume || 0) ? 'up' : 
+               enhancedMetrics.transactionVolume < (previousData?.transactionVolume || 0) ? 'down' : 'stable',
         timestamp: now,
-        previousValue: previousData?.dailyTransactions || 0,
+        previousValue: previousData?.transactionVolume || 0,
         baselineValues: {
-          '7d': transactionsRolling?.rollingAverages['7d'] || enhancedMetrics.dailyTransactions,
-          '30d': transactionsRolling?.rollingAverages['30d'] || enhancedMetrics.dailyTransactions,
-          '90d': transactionsRolling?.rollingAverages['90d'] || enhancedMetrics.dailyTransactions
+          '7d': transactionsRolling?.rollingAverages['7d'] || enhancedMetrics.transactionVolume,
+          '30d': transactionsRolling?.rollingAverages['30d'] || enhancedMetrics.transactionVolume,
+          '90d': transactionsRolling?.rollingAverages['90d'] || enhancedMetrics.transactionVolume
         },
         confidence: enhancedMetrics.confidence,
         source: enhancedMetrics.source
@@ -225,61 +205,20 @@ export async function GET(request: NextRequest) {
         source: enhancedMetrics.source
       },
       
-      // Additional enhanced metrics
-      networkRevenue: {
-        value: enhancedMetrics.networkRevenue,
-        absoluteValue: enhancedMetrics.networkRevenue,
-        formattedValue: formatCurrency(enhancedMetrics.networkRevenue),
-        change: previousData ? enhancedMetrics.networkRevenue - (previousData.networkRevenue || 0) : 0,
-        changePercent: previousData && previousData.networkRevenue ? 
-          ((enhancedMetrics.networkRevenue - previousData.networkRevenue) / previousData.networkRevenue) * 100 : 0,
-        trend: enhancedMetrics.networkRevenue > (previousData?.networkRevenue || 0) ? 'up' : 
-               enhancedMetrics.networkRevenue < (previousData?.networkRevenue || 0) ? 'down' : 'stable',
-        timestamp: now,
-        previousValue: previousData?.networkRevenue || 0,
-        baselineValues: {
-          '7d': enhancedMetrics.networkRevenue * 0.95,
-          '30d': enhancedMetrics.networkRevenue * 0.9,
-          '90d': enhancedMetrics.networkRevenue * 0.85
-        },
-        confidence: enhancedMetrics.confidence,
-        source: enhancedMetrics.source
-      },
-      
-      tvl: {
-        value: enhancedMetrics.tvl,
-        absoluteValue: enhancedMetrics.tvl,
-        formattedValue: formatCurrency(enhancedMetrics.tvl),
-        change: previousData ? enhancedMetrics.tvl - (previousData.tvl || 0) : 0,
-        changePercent: previousData && previousData.tvl ? 
-          ((enhancedMetrics.tvl - previousData.tvl) / previousData.tvl) * 100 : 0,
-        trend: enhancedMetrics.tvl > (previousData?.tvl || 0) ? 'up' : 
-               enhancedMetrics.tvl < (previousData?.tvl || 0) ? 'down' : 'stable',
-        timestamp: now,
-        previousValue: previousData?.tvl || 0,
-        baselineValues: {
-          '7d': enhancedMetrics.tvl * 0.95,
-          '30d': enhancedMetrics.tvl * 0.9,
-          '90d': enhancedMetrics.tvl * 0.85
-        },
-        confidence: enhancedMetrics.confidence,
-        source: enhancedMetrics.source
-      },
-      
       // Spike detection for key metrics
       spikeDetection: {
-        dailyActiveAddresses: await rollingCalculator.detectSpike(crypto.id, 'activeAddresses'),
-        newAddresses: await rollingCalculator.detectSpike(crypto.id, 'newAddresses'),
-        dailyTransactions: await rollingCalculator.detectSpike(crypto.id, 'dailyTransactions'),
-        transactionVolume: await rollingCalculator.detectSpike(crypto.id, 'transactionVolume')
+        dailyActiveAddresses: await rollingCalculator.detectSpike(parseInt(crypto.id), 'activeAddresses'),
+        newAddresses: await rollingCalculator.detectSpike(parseInt(crypto.id), 'newAddresses'),
+        dailyTransactions: await rollingCalculator.detectSpike(parseInt(crypto.id), 'transactionVolume'),
+        transactionVolume: await rollingCalculator.detectSpike(parseInt(crypto.id), 'transactionVolume')
       },
       
       // Data quality report
       dataQuality: {
-        dailyActiveAddresses: await rollingCalculator.getDataQualityReport(crypto.id, 'activeAddresses'),
-        newAddresses: await rollingCalculator.getDataQualityReport(crypto.id, 'newAddresses'),
-        dailyTransactions: await rollingCalculator.getDataQualityReport(crypto.id, 'dailyTransactions'),
-        transactionVolume: await rollingCalculator.getDataQualityReport(crypto.id, 'transactionVolume')
+        dailyActiveAddresses: await rollingCalculator.getDataQualityReport(parseInt(crypto.id), 'activeAddresses'),
+        newAddresses: await rollingCalculator.getDataQualityReport(parseInt(crypto.id), 'newAddresses'),
+        dailyTransactions: await rollingCalculator.getDataQualityReport(parseInt(crypto.id), 'transactionVolume'),
+        transactionVolume: await rollingCalculator.getDataQualityReport(parseInt(crypto.id), 'transactionVolume')
       },
       
       // Metadata
@@ -299,7 +238,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error fetching enhanced usage metrics:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch enhanced usage metrics', details: error.message },
+      { error: 'Failed to fetch enhanced usage metrics', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

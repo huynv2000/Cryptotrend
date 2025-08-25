@@ -239,7 +239,7 @@ function calculateVolatilityMetrics(priceData: any[]): any {
   const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
 
   // Calculate volatility (standard deviation of returns)
-  const returns = [];
+  const returns: number[] = [];
   for (let i = 1; i < prices.length; i++) {
     returns.push((prices[i] - prices[i-1]) / prices[i-1]);
   }

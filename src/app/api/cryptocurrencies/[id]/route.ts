@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     const { isActive } = await request.json();
     
-    await db.run(
-      'UPDATE cryptocurrencies SET isActive = ?, updatedAt = datetime("now") WHERE id = ?',
-      [isActive ? 1 : 0, params.id]
-    );
+    await db.cryptocurrency.update({
+      where: { id },
+      data: { 
+        isActive,
+        updatedAt: new Date()
+      }
+    });
     
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -20,9 +27,18 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    await db.run('DELETE FROM cryptocurrencies WHERE id = ? AND isDefault = 0', [params.id]);
+    const { id } = await params;
+    await db.cryptocurrency.deleteMany({
+      where: { 
+        id,
+        isDefault: false
+      }
+    });
     
     return NextResponse.json({ success: true });
   } catch (error) {

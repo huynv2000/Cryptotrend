@@ -187,7 +187,7 @@ export default function TVLMetricsSectionWithBaseline({
               DeFi TVL analysis for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading TVL metrics..." />
+          <LoadingState message="Loading TVL metrics..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -277,7 +277,6 @@ export default function TVLMetricsSectionWithBaseline({
                     "cursor-pointer hover:shadow-lg transition-all",
                     selectedMetric === metric.key && "ring-2 ring-green-500 bg-green-500/5"
                   )}
-                  onClick={() => handleMetricClick(metric.key)}
                 />
               );
             })}
@@ -477,7 +476,7 @@ export default function TVLMetricsSectionWithBaseline({
               <div className="w-full">
                 {(tvlLoading || isTVLLoading) && tvlHistory.length === 0 ? (
                   <div className="flex items-center justify-center h-96">
-                    <LoadingState text="Loading TVL chart..." />
+                    <LoadingState message="Loading TVL chart..." />
                   </div>
                 ) : tvlError ? (
                   <div className="flex items-center justify-center h-96">

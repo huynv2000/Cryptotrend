@@ -51,7 +51,9 @@ export default function MovingAverageLine({
         fullDate: format(date, 'MMM dd, yyyy'),
         formattedTVL: formatCurrency(item.tvl),
         formattedMA: formatCurrency(item.movingAverage),
-        formattedDeviation: `${deviation >= 0 ? '+' : ''}${deviation.toFixed(2)}%`,
+        formattedDeviation: deviation !== null && deviation !== undefined 
+          ? `${deviation >= 0 ? '+' : ''}${Number(deviation).toFixed(2)}%` 
+          : 'N/A',
         deviationColor: deviation >= 0 ? '#10b981' : '#ef4444',
         isPositive,
         index
@@ -87,7 +89,7 @@ export default function MovingAverageLine({
       {
         y: currentTVL,
         label: 'Current TVL',
-        color: currentTVL >= currentMA ? '#10b981' : '#ef4444',
+        color: (currentTVL || 0) >= (currentMA || 0) ? '#10b981' : '#ef4444',
         strokeDasharray: '3 3'
       }
     ];
@@ -250,12 +252,13 @@ export default function MovingAverageLine({
           
           {/* Reference lines */}
           {referenceLines.map((line, index) => (
-            <ReferenceLine
-              key={index}
-              y={line.y}
-              stroke={line.color}
-              strokeWidth={1}
-              strokeDasharray={line.strokeDasharray}
+            line.y !== undefined && (
+              <ReferenceLine
+                key={index}
+                y={line.y}
+                stroke={line.color}
+                strokeWidth={1}
+                strokeDasharray={line.strokeDasharray}
               label={{
                 value: line.label,
                 position: 'top',
@@ -264,6 +267,7 @@ export default function MovingAverageLine({
                 fontWeight: 500
               }}
             />
+            )
           ))}
           
           <Line

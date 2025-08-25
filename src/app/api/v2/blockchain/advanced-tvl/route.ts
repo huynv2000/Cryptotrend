@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     
     // If no advanced TVL data or outdated, try to fetch fresh data
     const now = new Date();
-    let freshAdvancedTVLData = null;
+    let freshAdvancedTVLData: any = null;
     
     if (!advancedTVLData || isDataOutdated(advancedTVLData.timestamp, now)) {
       try {
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     };
     
     // Get context data for comparison
-    let contextData = null;
+    let contextData: any = null;
     try {
       // Get recent advanced TVL data for comparison
       const recentMetrics = await db.advancedTVLMetric.findMany({
@@ -221,6 +221,7 @@ function calculateTrend(values: number[]): 'increasing' | 'decreasing' | 'stable
   
   const first = values[0];
   const last = values[values.length - 1];
+  if (!first || !last) return 'stable';
   const change = ((last - first) / first) * 100;
   
   if (Math.abs(change) < 2) {

@@ -28,7 +28,7 @@ export default function HashRateCard({
   onClick
 }: HashRateCardProps) {
   // Only use real data - no mock data
-  const sparklineData = data && data.historicalData ? data.historicalData : null;
+  const sparklineData = null; // historicalData is not available in MetricValue type
   
   return (
     <EnhancedMetricCard
@@ -43,8 +43,8 @@ export default function HashRateCard({
       icon={<Hash className="h-5 w-5 text-yellow-500" />}
       formatType="hashrate"
       isPositiveGood={true}
-      showSparkline={!!sparklineData}
-      sparklineData={sparklineData}
+      showSparkline={false}
+      sparklineData={undefined}
       className="hover:border-yellow-500/30"
     />
   );

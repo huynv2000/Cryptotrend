@@ -2,8 +2,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { TrendingUp, TrendingDown, ArrowRight, ArrowLeft, PieChart, BarChart3 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, ArrowRight, ArrowLeft, PieChart, BarChart3, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,12 @@ import BridgeFlowsCard from './BridgeFlowsCard';
 import ExchangeFlowsCard from './ExchangeFlowsCard';
 import StakingMetricsCard from './StakingMetricsCard';
 import MiningValidationCard from './MiningValidationCard';
+import { BridgeFlowsDetailChart } from '@/components/charts/BridgeFlowsDetailChart';
 import { LoadingState } from '@/components/LoadingState';
 import { cn } from '@/lib/utils';
+import { BridgeFlowService } from '@/lib/bridge-flow-service';
 import type { CashflowMetrics, BlockchainValue, TimeframeValue } from '@/lib/types';
+import type { BridgeFlowHistoricalData } from '@/types/bridge-flow';
 
 interface CashFlowSectionProps {
   blockchain: BlockchainValue;
@@ -62,9 +65,38 @@ export default function CashFlowSection({
 }: CashFlowSectionProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  const [detailTimeRange, setDetailTimeRange] = useState<'7D' | '30D' | '90D'>('90D');
+  const [historicalData, setHistoricalData] = useState<BridgeFlowHistoricalData[]>([]);
+  const [isHistoricalLoading, setIsHistoricalLoading] = useState(false);
   
   const handleMetricClick = (metricKey: string) => {
     setSelectedMetric(selectedMetric === metricKey ? null : metricKey);
+  };
+
+  // Load historical data when bridge flows is selected
+  useEffect(() => {
+    const loadHistoricalData = async () => {
+      if (selectedMetric === 'bridgeFlows') {
+        setIsHistoricalLoading(true);
+        try {
+          const days = detailTimeRange === '7D' ? 7 : detailTimeRange === '30D' ? 30 : 90;
+          const data = await BridgeFlowService.getHistoricalData(days, blockchain);
+          setHistoricalData(data);
+        } catch (error) {
+          console.error('Failed to load historical data:', error);
+          setHistoricalData([]);
+        } finally {
+          setIsHistoricalLoading(false);
+        }
+      }
+    };
+
+    loadHistoricalData();
+  }, [selectedMetric, detailTimeRange, blockchain]);
+
+  // Handle detail time range change
+  const handleDetailTimeRangeChange = (range: '7D' | '30D' | '90D') => {
+    setDetailTimeRange(range);
   };
   
   if (isLoading && !data) {
@@ -77,7 +109,7 @@ export default function CashFlowSection({
               Flow analysis for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading cashflow data..." />
+          <LoadingState message="Loading cashflow data..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -168,7 +200,9 @@ export default function CashFlowSection({
                     "text-sm font-medium",
                     isPositive ? "text-green-500" : "text-red-500"
                   )}>
-                    {isPositive ? '+' : ''}{metricData?.changePercent?.toFixed(1) || 0}%
+                    {metricData?.changePercent !== null && metricData?.changePercent !== undefined 
+                      ? `${isPositive ? '+' : ''}${Number(metricData.changePercent).toFixed(1)}%` 
+                      : 'N/A'}
                   </div>
                 </div>
               );
@@ -251,7 +285,9 @@ export default function CashFlowSection({
                             "text-sm",
                             isPositive ? "text-green-500" : "text-red-500"
                           )}>
-                            {isPositive ? '+' : ''}{metricData?.changePercent?.toFixed(1) || 0}%
+                            {metricData?.changePercent !== null && metricData?.changePercent !== undefined 
+                              ? `${isPositive ? '+' : ''}${Number(metricData.changePercent).toFixed(1)}%` 
+                              : 'N/A'}
                           </div>
                         </div>
                       </div>
@@ -358,7 +394,9 @@ export default function CashFlowSection({
                       variant={Math.abs(correlation.correlation) > 0.7 ? 'default' : 'secondary'}
                       className="text-xs"
                     >
-                      {correlation.correlation > 0 ? '+' : ''}{correlation.correlation.toFixed(2)}
+                      {correlation.correlation !== null && correlation.correlation !== undefined 
+                        ? `${correlation.correlation > 0 ? '+' : ''}${Number(correlation.correlation).toFixed(2)}` 
+                        : 'N/A'}
                     </Badge>
                   </div>
                 ))}
@@ -369,7 +407,7 @@ export default function CashFlowSection({
       </Tabs>
       
       {/* Selected Metric Detail */}
-      {selectedMetric && (
+      {selectedMetric === 'bridgeFlows' && (
         <Card className="border-green-500/20">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -379,6 +417,34 @@ export default function CashFlowSection({
                 size="sm"
                 onClick={() => setSelectedMetric(null)}
               >
+                <X className="h-4 w-4 mr-1" />
+                Close
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BridgeFlowsDetailChart
+              data={historicalData}
+              isLoading={isHistoricalLoading}
+              timeRange={detailTimeRange}
+              onTimeRangeChange={handleDetailTimeRangeChange}
+            />
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Selected Metric Detail - Other Metrics (Placeholder) */}
+      {selectedMetric && selectedMetric !== 'bridgeFlows' && (
+        <Card className="border-green-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Detailed View: {cashflowMetrics.find(m => m.key === selectedMetric)?.title}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedMetric(null)}
+              >
+                <X className="h-4 w-4 mr-1" />
                 Close
               </Button>
             </CardTitle>
@@ -387,7 +453,7 @@ export default function CashFlowSection({
             <div className="text-center py-8">
               <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                Detailed cashflow analysis will be displayed here
+                Detailed analysis for {cashflowMetrics.find(m => m.key === selectedMetric)?.title.toLowerCase()} will be displayed here
               </p>
             </div>
           </CardContent>

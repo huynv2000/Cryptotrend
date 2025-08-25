@@ -135,9 +135,9 @@ export async function GET(request: NextRequest) {
     const dataWithChanges = filteredData.map((item, index) => {
       let changePercent = 0;
       if (index > 0) {
-        const prevTVL = filteredData[index - 1].tvl;
+        const prevTVL = (filteredData[index - 1] as any)?.tvl || 0;
         if (prevTVL > 0) {
-          changePercent = ((item.tvl - prevTVL) / prevTVL) * 100;
+          changePercent = (((item as any)?.tvl || 0) - prevTVL) / prevTVL * 100;
         }
       }
       
@@ -148,9 +148,9 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate statistics
-    const tvls = dataWithChanges.map(d => d.tvl);
-    const currentTVL = tvls[tvls.length - 1];
-    const previousTVL = tvls.length > 1 ? tvls[tvls.length - 2] : currentTVL;
+    const tvls = dataWithChanges.map(d => d.tvl || 0);
+    const currentTVL = tvls[tvls.length - 1] || 0;
+    const previousTVL = tvls.length > 1 ? (tvls[tvls.length - 2] || 0) : currentTVL;
     const change24h = previousTVL > 0 ? ((currentTVL - previousTVL) / previousTVL) * 100 : 0;
     
     const avgTVL = tvls.reduce((sum, tvl) => sum + tvl, 0) / tvls.length;
@@ -177,8 +177,8 @@ export async function GET(request: NextRequest) {
     };
 
     // Add moving average data if requested
-    let movingAverageData = null;
-    let metrics = null;
+    let movingAverageData: any = null;
+    let metrics: any = null;
 
     if (includeMovingAverage && dataWithChanges.length > 0) {
       try {

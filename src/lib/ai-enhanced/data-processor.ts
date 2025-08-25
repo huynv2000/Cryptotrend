@@ -100,7 +100,7 @@ export class AdvancedDataProcessor {
 
     } catch (error) {
       this.logger.error('Data processing pipeline failed', error);
-      throw new Error(`Data processing failed: ${error.message}`);
+      throw new Error(`Data processing failed: ${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -211,7 +211,7 @@ class DataQualityValidator {
 
     } catch (error) {
       this.logger.error('Data validation failed', error);
-      throw new Error(`Data validation failed: ${error.message}`);
+      throw new Error(`Data validation failed: ${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -264,7 +264,7 @@ class FeatureExtractor {
 
     } catch (error) {
       this.logger.error('Feature extraction failed', error);
-      throw new Error(`Feature extraction failed: ${error.message}`);
+      throw new Error(`Feature extraction failed: ${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -363,7 +363,7 @@ class DataNormalizer {
 
     } catch (error) {
       this.logger.error('Data normalization failed', error);
-      throw new Error(`Data normalization failed: ${error.message}`);
+      throw new Error(`Data normalization failed: ${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -380,7 +380,7 @@ class DataNormalizer {
     
     // Add market features
     array.push(features.market.liquidity.bidAskSpread, features.market.liquidity.marketDepth);
-    array.push(features.market.depth.imbalance);
+    array.push(features.market.marketDepth.imbalance);
     array.push(...Object.values(features.market.dominance));
     
     // Add on-chain features
@@ -456,7 +456,7 @@ class OutlierDetector {
 
     } catch (error) {
       this.logger.error('Outlier detection failed', error);
-      throw new Error(`Outlier detection failed: ${error.message}`);
+      throw new Error(`Outlier detection failed: ${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -532,7 +532,7 @@ class TimeSeriesPreparer {
 
     } catch (error) {
       this.logger.error('Time series preparation failed', error);
-      throw new Error(`Time series preparation failed: ${error.message}`);
+      throw new Error(`Time series preparation failed: ${error instanceof Error ? error.message : error}`);
     }
   }
 

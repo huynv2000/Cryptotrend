@@ -60,6 +60,7 @@ model Cryptocurrency {
   advancedTvlMetrics  AdvancedTVLMetric[]
   enhancedTvlMetrics  EnhancedTVLMetric[]
   stakingMetrics      StakingMetric[]
+  riskMetrics         RiskMetric[]
   addedByUser         User?            @relation("AddedCoins", fields: [addedBy], references: [id])
   
   @@map("cryptocurrencies")
@@ -507,4 +508,137 @@ enum CollectionStatus {
   COMPLETED
   FAILED
   RETRYING
+}
+
+// User Feedback Collection (for AI personalization testing)
+model UserFeedback {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionId   String
+  testId      String?
+  rating      Int      // 1-5 rating
+  feedback    String
+  suggestions String?  // JSON string array of improvement suggestions
+  page        String   // Page where feedback was given
+  section     String?  // Section within the page
+  deviceType  String   @default("web")
+  experienceLevel String @default("beginner")
+  timestamp   DateTime @default(now())
+  
+  @@map("user_feedback")
+}
+
+// Feedback Analysis Results (for AI-powered feedback analysis)
+model FeedbackAnalysis {
+  id          String   @id @default(cuid())
+  feedbackId  String
+  userId      String
+  sentiment   String   // positive, negative, neutral
+  themes      String?  // JSON string array of identified themes
+  improvements String? // JSON string array of generated improvement suggestions
+  timestamp   DateTime @default(now())
+  
+  @@map("feedback_analysis")
+}
+
+// Test Results (for AI personalization testing framework)
+model TestResult {
+  id          String   @id @default(cuid())
+  category    String   // unit, integration, performance, etc.
+  name        String
+  status      String   // PASSED, FAILED, PENDING, SKIPPED
+  duration    Int?     // Test duration in milliseconds
+  errorMessage String? // Error message if failed
+  metadata    Json?    // Additional test metadata
+  timestamp   DateTime @default(now())
+  
+  @@map("test_results")
+}
+
+// Performance Metrics (for system performance monitoring)
+model PerformanceMetric {
+  id            String   @id @default(cuid())
+  responseTime  Float?   // Response time in milliseconds
+  throughput    Float?   // Requests per second
+  errorRate     Float?   // Error rate percentage
+  memoryUsage   Float?   // Memory usage in MB
+  cpuUsage      Float?   // CPU usage percentage
+  uptime        Float?   // Uptime percentage
+  timestamp     DateTime @default(now())
+  
+  @@map("performance_metrics")
+}
+
+// System Health Indicators
+model SystemHealth {
+  id          String   @id @default(cuid())
+  component   String   // api, database, ai, cache, etc.
+  status      String   // healthy, warning, critical
+  responseTime Float?   // Response time in milliseconds
+  uptime      Float?   // Uptime percentage
+  metadata    Json?    // Additional health metadata
+  timestamp   DateTime @default(now())
+  
+  @@map("system_health")
+}
+
+// Risk Metrics Model
+model RiskMetric {
+  id                     String   @id @default(cuid())
+  cryptoId               String
+  timestamp              DateTime @default(now())
+  
+  // Value at Risk (VaR) Metrics
+  var95                  Float?   // 95% VaR (daily)
+  var99                  Float?   // 99% VaR (daily)
+  varHistorical          Float?   // Historical VaR
+  varParametric          Float?   // Parametric VaR
+  varMonteCarlo         Float?   // Monte Carlo VaR
+  
+  // Expected Shortfall (CVaR)
+  expectedShortfall95     Float?   // 95% Expected Shortfall
+  expectedShortfall99     Float?   // 99% Expected Shortfall
+  
+  // Volatility Metrics
+  volatility             Float?   // Annualized volatility
+  dailyVolatility        Float?   // Daily volatility
+  weeklyVolatility       Float?   // Weekly volatility
+  monthlyVolatility      Float?   // Monthly volatility
+  
+  // Beta and Correlation
+  beta                   Float?   // Beta relative to market
+  correlation            Float?   // Correlation with market
+  rSquared               Float?   // R-squared value
+  
+  // Maximum Drawdown
+  maxDrawdown            Float?   // Maximum drawdown percentage
+  maxDrawdownDuration    Int?     // Maximum drawdown duration in days
+  avgDrawdown            Float?   // Average drawdown percentage
+  
+  // Risk Ratios
+  sharpeRatio            Float?   // Sharpe ratio
+  sortinoRatio           Float?   // Sortino ratio
+  calmarRatio            Float?   // Calmar ratio
+  informationRatio       Float?   // Information ratio
+  
+  // Stress Test Results
+  stressTestLoss         Float?   // Maximum loss under stress test
+  stressTestScenario     String?  // Stress test scenario description
+  stressTestConfidence   Float?   // Confidence level for stress test
+  
+  // Risk Level Classification
+  riskLevel              String?  // LOW, MEDIUM, HIGH, CRITICAL
+  riskScore              Float?   // Overall risk score 0-100
+  riskTrend              String?  // IMPROVING, STABLE, DETERIORATING
+  
+  // Metadata
+  confidence             Float?   // Data confidence score 0-1
+  lastUpdated            DateTime @default(now())
+  
+  crypto                 Cryptocurrency @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  
+  @@unique([cryptoId, timestamp])
+  @@index([cryptoId])
+  @@index([timestamp])
+  @@map("risk_metrics")
 }

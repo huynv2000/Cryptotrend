@@ -76,12 +76,16 @@ export default function TVLBarChart({
               "text-sm font-medium",
               isPositive ? "text-green-600" : "text-red-600"
             )}>
-              Change: {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
+              Change: {changePercent !== null && changePercent !== undefined 
+                ? `${isPositive ? '+' : ''}${Number(changePercent).toFixed(2)}%` 
+                : 'N/A'}
             </div>
           )}
           {dominance !== undefined && (
             <div className="text-sm text-gray-600">
-              Dominance: <span className="font-medium">{dominance.toFixed(2)}%</span>
+              Dominance: <span className="font-medium">{dominance !== null && dominance !== undefined 
+                ? `${Number(dominance).toFixed(2)}%` 
+                : 'N/A'}</span>
             </div>
           )}
         </div>

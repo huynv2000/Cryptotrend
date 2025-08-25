@@ -4,7 +4,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { ResolutionProvider } from "@/contexts/ResolutionContext";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
+import { DisplayPreferencesProvider } from "@/contexts/DisplayPreferencesContext";
 import { initializePerformanceOptimization } from "@/lib/performance";
+import { enhancedCachingService } from "@/lib/enhanced-caching-service";
+import { realTimeMetricsCollector } from "@/lib/real-time-metrics";
 
 export const metadata: Metadata = {
   title: "Crypto Analytics Dashboard Pro",
@@ -28,8 +31,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Initialize performance optimization on server start
+  // Initialize enhanced caching service
   if (typeof window === 'undefined') {
+    enhancedCachingService.initialize().catch(console.error);
+    // Initialize real-time metrics collector
+    realTimeMetricsCollector.initialize().catch(console.error);
+    // Initialize performance optimization (caching-enabled version)
     initializePerformanceOptimization().catch(console.error);
   }
 
@@ -44,7 +51,9 @@ export default function RootLayout({
         >
           <Providers>
             <ResolutionProvider>
-              {children}
+              <DisplayPreferencesProvider>
+                {children}
+              </DisplayPreferencesProvider>
             </ResolutionProvider>
             <Toaster />
           </Providers>

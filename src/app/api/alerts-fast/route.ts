@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+interface Alert {
+  id: string;
+  type: string;
+  category: string;
+  title: string;
+  message: string;
+  severity: string;
+  timestamp: Date;
+  coinId: string;
+  actionRequired: boolean;
+  recommendedAction?: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -36,7 +49,7 @@ export async function GET(request: NextRequest) {
       });
       
       // Generate alerts based on data
-      const alerts = [];
+      const alerts: Alert[] = [];
       
       if (technicalData && technicalData.rsi !== null) {
         // RSI alerts

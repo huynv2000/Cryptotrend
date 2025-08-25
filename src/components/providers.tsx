@@ -23,10 +23,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         refetchOnWindowFocus: false,
         // Garbage collect unused data after 10 minutes
         gcTime: 10 * 60 * 1000,
-        // Error handling
-        onError: (error) => {
-          console.error('🚨 [QueryClient] Global query error:', error);
-        },
       },
       mutations: {
         // Retry failed mutations 3 times
@@ -37,10 +33,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           return failureCount < 3;
         },
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-        // Error handling
-        onError: (error) => {
-          console.error('🚨 [QueryClient] Global mutation error:', error);
-        },
       },
     },
   }));

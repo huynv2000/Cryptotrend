@@ -93,7 +93,7 @@ export default function UsageMetricsSection({
               Key performance indicators for {blockchain}
             </p>
           </div>
-          <LoadingState text="Loading metrics..." />
+          <LoadingState message="Loading metrics..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
@@ -187,7 +187,9 @@ export default function UsageMetricsSection({
                     "text-sm font-medium",
                     isPositive ? "text-green-500" : "text-red-500"
                   )}>
-                    {isPositive ? '+' : ''}{changePercent.toFixed(1)}%
+                    {changePercent !== null && changePercent !== undefined 
+                      ? `${isPositive ? '+' : ''}${Number(changePercent).toFixed(1)}%` 
+                      : 'N/A'}
                   </div>
                 </div>
               );
@@ -297,7 +299,9 @@ export default function UsageMetricsSection({
                             "text-sm",
                             isPositive ? "text-green-500" : "text-red-500"
                           )}>
-                            {isPositive ? '+' : ''}{changePercent.toFixed(1)}%
+                            {changePercent !== null && changePercent !== undefined 
+                              ? `${isPositive ? '+' : ''}${Number(changePercent).toFixed(1)}%` 
+                              : 'N/A'}
                           </div>
                         </div>
                       </div>

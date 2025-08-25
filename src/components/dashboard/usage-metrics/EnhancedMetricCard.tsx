@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, Info, BarChart3, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatNumber, formatPercent, formatCurrency, formatHashRate, getTrendColor } from '@/lib/utils';
+import { formatNumber, formatPercent, formatFinancialValue, formatHashRate, getTrendColor } from '@/lib/utils';
 import type { MetricValue, SpikeDetectionResult } from '@/lib/types';
 
 interface GrowthBaseline {
@@ -19,24 +19,24 @@ interface GrowthBaseline {
 
 interface EnhancedMetricCardProps {
   title: string;
-  description?: string;
+  description?: string | undefined;
   data: MetricValue | null;
   rollingAverages?: {
     '7d': number;
     '30d': number;
     '90d': number;
-  };
-  spikeDetection?: SpikeDetectionResult;
+  } | undefined;
+  spikeDetection?: SpikeDetectionResult | undefined;
   isLoading: boolean;
-  isSelected?: boolean;
-  onClick?: () => void;
-  icon?: React.ReactNode;
-  formatType?: 'number' | 'currency' | 'percent' | 'hashrate';
-  unit?: string;
-  isPositiveGood?: boolean;
-  showSparkline?: boolean;
-  sparklineData?: number[];
-  className?: string;
+  isSelected?: boolean | undefined;
+  onClick?: (() => void) | undefined;
+  icon?: React.ReactNode | undefined;
+  formatType?: 'number' | 'currency' | 'percent' | 'hashrate' | undefined;
+  unit?: string | undefined;
+  isPositiveGood?: boolean | undefined;
+  showSparkline?: boolean | undefined;
+  sparklineData?: number[] | undefined;
+  className?: string | undefined;
 }
 
 export default function EnhancedMetricCard({
@@ -62,7 +62,7 @@ export default function EnhancedMetricCard({
     }
     switch (formatType) {
       case 'currency':
-        return formatCurrency(value);
+        return formatFinancialValue(value, { style: 'compact' });
       case 'percent':
         return formatPercent(value);
       case 'hashrate':
@@ -283,7 +283,7 @@ export default function EnhancedMetricCard({
               {getTrendIcon()}
               <span className="text-xs font-medium">
                 {data.changePercent !== null && data.changePercent !== undefined 
-                  ? `${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%` 
+                  ? `${data.changePercent >= 0 ? '+' : ''}${Number(data.changePercent).toFixed(2)}%` 
                   : 'N/A'}
               </span>
             </div>
@@ -332,7 +332,9 @@ export default function EnhancedMetricCard({
                         "text-xs font-bold",
                         getGrowthColor(growthPercent)
                       )}>
-                        {growthPercent >= 0 ? '+' : ''}{growthPercent.toFixed(1)}%
+                        {growthPercent !== null && growthPercent !== undefined 
+                          ? `${growthPercent >= 0 ? '+' : ''}${Number(growthPercent).toFixed(1)}%` 
+                          : 'N/A'}
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">

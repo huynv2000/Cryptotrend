@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const defiLlamaService = DeFiLlamaService.getInstance();
 
     // Get TVL ranking for all chains
-    let tvlRanking = [];
+    let tvlRanking: any[] = [];
     try {
       tvlRanking = await defiLlamaService.getChainTVLRanking();
     } catch (error) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get data for requested blockchains
-    const comparisonData = [];
+    const comparisonData: any[] = [];
     
     for (const blockchain of blockchains) {
       try {
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching TVL comparison data:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch TVL comparison data', details: error.message },
+      { error: 'Failed to fetch TVL comparison data', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
@@ -211,7 +211,7 @@ function calculatePearsonCorrelation(x: number[], y: number[]): number {
   const n = x.length;
   const sumX = x.reduce((sum, val) => sum + val, 0);
   const sumY = y.reduce((sum, val) => sum + val, 0);
-  const sumXY = x.reduce((sum, val, i) => sum + (val * y[i]), 0);
+  const sumXY = x.reduce((sum, val, i) => sum + (val * (y[i] || 0)), 0);
   const sumX2 = x.reduce((sum, val) => sum + (val * val), 0);
   const sumY2 = y.reduce((sum, val) => sum + (val * val), 0);
 

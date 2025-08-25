@@ -43,7 +43,7 @@ import {
   PieChart,
   Pie,
   Cell
-} from '@/components/ui/chart';
+} from 'recharts';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -59,7 +59,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-import { EnhancedAnalysisResult, Recommendation, TradingSignal, RiskLevel } from '@/lib/ai-enhanced/types';
+import { EnhancedAnalysisResult, Recommendation, TradingSignal, RiskLevel, ModelType } from '@/lib/ai-enhanced/types';
 import { EnhancedAIAnalysisService } from '@/lib/ai-enhanced/enhanced-ai-service';
 
 interface EnhancedAIAnalysisPanelProps {
@@ -95,19 +95,65 @@ export const EnhancedAIAnalysisPanel: React.FC<EnhancedAIAnalysisPanelProps> = (
   // Initialize AI service
   const aiService = React.useMemo(() => {
     const config = {
-      arima: { p: 1, d: 1, q: 1, seasonalP: 1, seasonalD: 1, seasonalQ: 1, seasonalPeriod: 24 },
-      prophet: { growth: 'linear', changepointPriorScale: 0.05, seasonalityPriorScale: 0.1, holidaysPriorScale: 0.1, seasonalityMode: 'additive' },
-      lstm: { units: 50, layers: 2, dropout: 0.2, recurrentDropout: 0.2, batchSize: 32, epochs: 100, learningRate: 0.001 },
-      ensemble: { models: ['ARIMA', 'PROPHET', 'LSTM'], weights: [0.3, 0.3, 0.4], votingMethod: 'weighted' as const },
+      arima: { p: 1, d: 1, q: 1, seasonalP: 1, seasonalD: 1, seasonalQ: 1, seasonalPeriod: 24, optimizationMethod: 'MLE' as const, informationCriterion: 'AIC' as const },
+      prophet: { 
+        growth: 'linear' as const, 
+        changepoints: [], 
+        changepointPriorScale: 0.05, 
+        seasonalityPriorScale: 0.1, 
+        holidaysPriorScale: 0.1, 
+        seasonalityMode: 'additive' as const,
+        yearlySeasonality: true,
+        weeklySeasonality: true,
+        dailySeasonality: false,
+        holidays: [],
+        additionalRegressors: [],
+        uncertaintySamples: 1000,
+        mcmcSamples: 0,
+        intervalWidth: 0.8
+      },
+      lstm: { 
+        units: 50, 
+        layers: 2, 
+        dropout: 0.2, 
+        recurrentDropout: 0.2, 
+        batchSize: 32, 
+        epochs: 100, 
+        learningRate: 0.001,
+        optimizer: 'adam' as const,
+        lossFunction: 'mse' as const,
+        activation: 'tanh' as const,
+        recurrentActivation: 'tanh' as const,
+        useAttention: false,
+        useBatchNorm: true,
+        sequenceLength: 30,
+        forecastHorizon: 24,
+        validationSplit: 0.2,
+        earlyStoppingPatience: 10,
+        reduceLROnPlateauPatience: 5
+      },
+      ensemble: { 
+        models: ['ARIMA', 'PROPHET', 'LSTM'] as ModelType[], 
+        weights: [0.3, 0.3, 0.4], 
+        votingMethod: 'weighted' as const, 
+        stackingModel: 'LSTM' as ModelType,
+        adaptationRate: 0.1,
+        performanceWindow: 100,
+        diversityThreshold: 0.7,
+        confidenceThreshold: 0.8,
+        useDynamicWeights: true,
+        useModelSelection: false,
+        uncertaintyMethod: 'variance' as const
+      },
       var: { confidence: 0.95, timeHorizon: 1, method: 'historical' as const },
       expectedShortfall: { confidence: 0.95, timeHorizon: 1, method: 'historical' as const },
       monteCarlo: { simulations: 1000, timeSteps: 24, drift: 0.001, volatility: 0.02, method: 'euler' as const },
       nlp: { model: 'gpt-4', maxTokens: 1000, temperature: 0.7, topP: 0.9, topK: 50 },
       sentiment: { model: 'sentiment-transformer', threshold: 0.8, aggregationMethod: 'weighted' as const },
       emotion: { model: 'emotion-analysis', emotions: ['fear', 'greed', 'optimism', 'pessimism'], threshold: 0.7 },
-      isolation: { contamination: 0.1, maxSamples: 1000, nEstimators: 100 },
-      autoencoder: { encodingDim: 32, hiddenLayers: [64, 32], activation: 'relu', optimizer: 'adam', loss: 'mse' },
-      svm: { kernel: 'rbf', gamma: 'scale', nu: 0.5, maxIterations: 1000 },
+      isolation: { contamination: 0.1, maxSamples: 1000, nEstimators: 100, maxFeatures: 1.0, bootstrap: true, randomState: 42 },
+      autoencoder: { encodingDim: 32, hiddenLayers: [64, 32], activation: 'relu', optimizer: 'adam', loss: 'mse', epochs: 100, batchSize: 32, learningRate: 0.001, validationSplit: 0.2, earlyStopping: true, patience: 10 },
+      svm: { kernel: 'rbf', gamma: 'scale', nu: 0.5, maxIterations: 1000, tolerance: 0.001, shrinking: true, cacheSize: 200 },
       retrainingThreshold: 0.85,
       confidenceThreshold: 0.7,
       riskThreshold: 0.6,
@@ -715,10 +761,10 @@ export const EnhancedAIAnalysisPanel: React.FC<EnhancedAIAnalysisPanelProps> = (
                   
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Fear & Greed Index</span>
-                      <span className="text-sm font-medium">{analysis.sentimentResults.fearGreedIndex.toFixed(0)}</span>
+                      <span className="text-sm">Overall Sentiment Score</span>
+                      <span className="text-sm font-medium">{analysis.sentimentResults.overallSentimentScore.toFixed(2)}</span>
                     </div>
-                    <Progress value={analysis.sentimentResults.fearGreedIndex} />
+                    <Progress value={analysis.sentimentResults.overallSentimentScore * 100} />
                   </div>
                 </div>
               </CardContent>

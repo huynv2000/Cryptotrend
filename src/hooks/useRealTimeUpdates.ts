@@ -38,7 +38,7 @@ export function useRealTimeUpdates({
   const socketRef = useRef<Socket | null>(null);
   const store = useBlockchainStore();
   const queryClient = useQueryClient();
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   
@@ -156,6 +156,7 @@ export function useRealTimeUpdates({
         type: 'error',
         title: 'WebSocket Error',
         message: 'A WebSocket error occurred',
+        read: false,
       });
     });
     
@@ -210,6 +211,7 @@ export function useRealTimeUpdates({
         type: 'error',
         title: 'Connection Lost',
         message: 'Unable to reconnect to real-time updates',
+        read: false,
       });
       return;
     }
@@ -321,6 +323,7 @@ export function useRealTimeUpdates({
         type: 'warning',
         title: 'Spike Alert',
         message: data.message || 'Anomaly detected in blockchain metrics',
+        read: false,
         actions: [
           {
             label: 'View Details',

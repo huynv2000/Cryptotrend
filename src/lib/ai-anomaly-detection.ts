@@ -331,7 +331,7 @@ class AIAnomalyDetectionSystem {
           anomaliesByType[anomalyType] = (anomaliesByType[anomalyType] || 0) + 1;
           
           // Count by severity
-          const severity = this.getSeverityFromScore(point.metadata.anomalyScore);
+          const severity = this.getSeverityFromScore(point.metadata?.anomalyScore || 0);
           anomaliesBySeverity[severity] = (anomaliesBySeverity[severity] || 0) + 1;
           
           // Count by asset

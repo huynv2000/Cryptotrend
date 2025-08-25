@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
         
         return NextResponse.json({
           signal: {
+            type: 'HOLD',
             signal: 'N/A',
             confidence: 0,
             reasoning: 'Insufficient data available for signal calculation',
@@ -108,6 +109,7 @@ export async function GET(request: NextRequest) {
       }
       
       const tradingSignal = {
+        type: signal,
         signal: signal,
         confidence: confidence,
         reasoning: reasoning,

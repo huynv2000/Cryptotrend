@@ -1,26 +1,9 @@
-// Professional Financial Formatting Utilities
-// Designed for cryptocurrency and financial dashboards
-// Following Bloomberg, Reuters, and Yahoo Finance standards
-
-export interface FormatOptions {
-  style?: 'compact' | 'detailed' | 'smart';
-  maxDigits?: number;
-  showCurrency?: boolean;
-  decimals?: number;
-  context?: 'card' | 'chart' | 'table' | 'report';
-  currency?: string;
-}
-
-export interface FormattedValue {
-  compact: string;      // "$44.48B"
-  detailed: string;     // "$44,480,499,366.74"
-  short: string;       // "44.48B"
-  raw: number;          // Original value
-}
+// Financial Formatting Utilities
+// Professional formatting for large financial values based on industry standards
 
 /**
- * Professional Financial Formatter for cryptocurrency and financial data
- * Follows industry standards from Bloomberg, Reuters, and Yahoo Finance
+ * FinancialFormatter class for professional financial value formatting
+ * Follows Bloomberg, Reuters, and Yahoo Finance standards
  */
 export class FinancialFormatter {
   private static readonly thresholds = {
@@ -40,12 +23,17 @@ export class FinancialFormatter {
   };
 
   /**
-   * Format value in compact style (primary dashboard display)
-   * Examples: "$44.48B", "$395.07M", "$2.45T"
+   * Format values in compact style (primary dashboard display)
+   * Examples: $44.48B, $395.07B, $2.45M, $1.23T
    */
   static formatCompact(
     value: number | null | undefined,
-    options: FormatOptions = {}
+    options: {
+      maxDigits?: number;
+      showCurrency?: boolean;
+      decimals?: number;
+      currency?: string;
+    } = {}
   ): string {
     if (value === null || value === undefined || isNaN(value)) {
       return 'N/A';
@@ -57,64 +45,64 @@ export class FinancialFormatter {
       decimals = 2,
       currency = 'USD'
     } = options;
-    
+
     const numValue = Math.abs(value);
-    
-    // Handle very large values
+
+    // Handle extremely large values
     if (numValue >= this.thresholds.quadrillion) {
       const formatted = (value / this.thresholds.quadrillion).toFixed(decimals);
       return showCurrency ? `$${formatted}Q` : `${formatted}Q`;
     }
-    
+
+    // Handle trillion values
     if (numValue >= this.thresholds.trillion) {
       const formatted = (value / this.thresholds.trillion).toFixed(decimals);
       return showCurrency ? `$${formatted}T` : `${formatted}T`;
     }
-    
+
+    // Handle billion values (most common for crypto/DeFi)
     if (numValue >= this.thresholds.billion) {
       const formatted = (value / this.thresholds.billion).toFixed(decimals);
       return showCurrency ? `$${formatted}B` : `${formatted}B`;
     }
-    
+
+    // Handle million values
     if (numValue >= this.thresholds.million) {
       const formatted = (value / this.thresholds.million).toFixed(decimals);
       return showCurrency ? `$${formatted}M` : `${formatted}M`;
     }
-    
+
+    // Handle thousand values
     if (numValue >= this.thresholds.thousand) {
       const formatted = (value / this.thresholds.thousand).toFixed(decimals);
       return showCurrency ? `$${formatted}K` : `${formatted}K`;
     }
-    
+
     // For values less than 1K, use standard currency format
-    if (showCurrency) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      }).format(value);
-    }
-    
-    return value.toFixed(decimals);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
   }
 
   /**
-   * Format value in detailed style (full precision)
-   * Examples: "$44,480,499,366.74", "$395,066,001,931.13"
+   * Format values in detailed style (full precision)
+   * Examples: $44,480,499,366.74, $395,066,001,931.13
    */
   static formatDetailed(
     value: number | null | undefined,
-    options: FormatOptions = {}
+    options: {
+      currency?: string;
+      decimals?: number;
+    } = {}
   ): string {
     if (value === null || value === undefined || isNaN(value)) {
       return 'N/A';
     }
 
-    const { 
-      decimals = 2,
-      currency = 'USD'
-    } = options;
+    const { currency = 'USD', decimals = 2 } = options;
 
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -125,15 +113,19 @@ export class FinancialFormatter {
   }
 
   /**
-   * Format value in short style (no currency symbol)
-   * Examples: "44.48B", "395.07M", "2.45T"
+   * Format values in short style (numbers only, no currency symbol)
+   * Examples: 44.48B, 395.07B, 2.45M
    */
   static formatShort(
     value: number | null | undefined,
-    options: FormatOptions = {}
+    options: {
+      decimals?: number;
+    } = {}
   ): string {
-    const optionsWithoutCurrency = { ...options, showCurrency: false };
-    return this.formatCompact(value, optionsWithoutCurrency);
+    return this.formatCompact(value, {
+      ...options,
+      showCurrency: false,
+    });
   }
 
   /**
@@ -141,139 +133,225 @@ export class FinancialFormatter {
    */
   static formatSmart(
     value: number | null | undefined,
-    context: 'card' | 'chart' | 'table' | 'report' = 'card',
-    options: FormatOptions = {}
+    context: 'card' | 'chart' | 'table' | 'report' | 'tooltip' = 'card',
+    options: {
+      availableSpace?: number;
+      priority?: 'high' | 'medium' | 'low';
+    } = {}
   ): string {
-    const contextOptions: FormatOptions = { ...options, context };
-    
+    if (value === null || value === undefined || isNaN(value)) {
+      return 'N/A';
+    }
+
+    const { availableSpace = 100, priority = 'medium' } = options;
+
     switch (context) {
       case 'card':
-        // Cards need compact formatting due to space constraints
-        return this.formatCompact(value, { ...contextOptions, maxDigits: 6, decimals: 2 });
-      
+        // Cards need compact formatting for space efficiency
+        if (availableSpace < 80) {
+          return this.formatCompact(value, { maxDigits: 6, decimals: 1 });
+        }
+        return this.formatCompact(value, { maxDigits: 8, decimals: 2 });
+
       case 'chart':
-        // Charts often need no currency symbol and shorter format
-        return this.formatCompact(value, { ...contextOptions, showCurrency: false, maxDigits: 8, decimals: 1 });
-      
+        // Charts often need shorter labels
+        return this.formatShort(value, { decimals: 1 });
+
       case 'table':
         // Tables can handle slightly longer formats
-        return this.formatCompact(value, { ...contextOptions, maxDigits: 10, decimals: 2 });
-      
+        return this.formatCompact(value, { maxDigits: 10, decimals: 2 });
+
       case 'report':
-        // Reports should show full precision
-        return this.formatDetailed(value, contextOptions);
-      
+        // Reports show full precision
+        return this.formatDetailed(value);
+
+      case 'tooltip':
+        // Tooltips show detailed values
+        return this.formatDetailed(value);
+
       default:
-        return this.formatCompact(value, contextOptions);
+        return this.formatCompact(value);
     }
   }
 
   /**
-   * Get all formatted versions of a value
-   * Useful for tooltips, exports, and multiple display contexts
+   * Format percentage values with consistent styling
    */
-  static formatAll(
+  static formatPercent(
     value: number | null | undefined,
-    options: FormatOptions = {}
-  ): FormattedValue {
+    options: {
+      decimals?: number;
+      showSign?: boolean;
+      style?: 'compact' | 'detailed';
+    } = {}
+  ): string {
+    if (value === null || value === undefined || isNaN(value)) {
+      return 'N/A';
+    }
+
+    const { decimals = 2, showSign = true, style = 'compact' } = options;
+
+    const formattedValue = value.toFixed(decimals);
+    const sign = showSign && value > 0 ? '+' : '';
+
+    return style === 'compact' 
+      ? `${sign}${formattedValue}%`
+      : `${sign}${formattedValue}%`;
+  }
+
+  /**
+   * Get multiple format variations for a single value
+   * Useful for responsive design and tooltips
+   */
+  static getAllFormats(
+    value: number | null | undefined,
+    options: {
+      currency?: string;
+      decimals?: number;
+    } = {}
+  ) {
     if (value === null || value === undefined || isNaN(value)) {
       return {
         compact: 'N/A',
         detailed: 'N/A',
         short: 'N/A',
-        raw: 0,
+        raw: null,
       };
     }
 
+    const { currency = 'USD', decimals = 2 } = options;
+
     return {
-      compact: this.formatCompact(value, options),
-      detailed: this.formatDetailed(value, options),
-      short: this.formatShort(value, options),
+      compact: this.formatCompact(value, { currency, decimals }),
+      detailed: this.formatDetailed(value, { currency, decimals }),
+      short: this.formatShort(value, { decimals }),
       raw: value,
     };
   }
 
   /**
-   * Format percentage values
+   * Format large numbers with custom thresholds
+   * Useful for specific use cases that need non-standard formatting
    */
-  static formatPercent(
+  static formatWithCustomThresholds(
     value: number | null | undefined,
-    decimals: number = 2,
-    showSign: boolean = true
+    thresholds: {
+      million?: number;
+      billion?: number;
+      trillion?: number;
+    },
+    options: {
+      decimals?: number;
+      showCurrency?: boolean;
+    } = {}
   ): string {
     if (value === null || value === undefined || isNaN(value)) {
       return 'N/A';
     }
 
-    const sign = showSign && value > 0 ? '+' : '';
-    return `${sign}${value.toFixed(decimals)}%`;
-  }
+    const { decimals = 2, showCurrency = true } = options;
+    const customThresholds = { ...this.thresholds, ...thresholds };
+    const numValue = Math.abs(value);
 
-  /**
-   * Format large numbers without currency (for market cap, volume, etc.)
-   */
-  static formatLargeNumber(
-    value: number | null | undefined,
-    options: FormatOptions = {}
-  ): string {
-    return this.formatCompact(value, { ...options, showCurrency: false });
-  }
+    if (numValue >= (customThresholds.trillion || this.thresholds.trillion)) {
+      const formatted = (value / (customThresholds.trillion || this.thresholds.trillion)).toFixed(decimals);
+      return showCurrency ? `$${formatted}T` : `${formatted}T`;
+    }
 
-  /**
-   * Get the appropriate suffix for a value
-   */
-  static getSuffix(value: number): string {
-    const absValue = Math.abs(value);
-    
-    if (absValue >= this.thresholds.quadrillion) return this.suffixes.quadrillion;
-    if (absValue >= this.thresholds.trillion) return this.suffixes.trillion;
-    if (absValue >= this.thresholds.billion) return this.suffixes.billion;
-    if (absValue >= this.thresholds.million) return this.suffixes.million;
-    if (absValue >= this.thresholds.thousand) return this.suffixes.thousand;
-    
-    return '';
+    if (numValue >= (customThresholds.billion || this.thresholds.billion)) {
+      const formatted = (value / (customThresholds.billion || this.thresholds.billion)).toFixed(decimals);
+      return showCurrency ? `$${formatted}B` : `${formatted}B`;
+    }
+
+    if (numValue >= (customThresholds.million || this.thresholds.million)) {
+      const formatted = (value / (customThresholds.million || this.thresholds.million)).toFixed(decimals);
+      return showCurrency ? `$${formatted}M` : `${formatted}M`;
+    }
+
+    return this.formatCompact(value, { decimals, showCurrency });
   }
 
   /**
    * Check if a value should be formatted as compact
    */
-  static shouldUseCompactFormat(value: number, threshold: number = 1e6): boolean {
-    return Math.abs(value) >= threshold;
+  static shouldUseCompactFormat(value: number | null | undefined): boolean {
+    if (value === null || value === undefined || isNaN(value)) {
+      return false;
+    }
+    return Math.abs(value) >= this.thresholds.million;
   }
 
   /**
-   * Auto-detect the best format based on value and context
+   * Get the appropriate suffix for a value
    */
-  static autoFormat(
-    value: number | null | undefined,
-    context: 'card' | 'chart' | 'table' | 'report' = 'card'
-  ): string {
+  static getSuffix(value: number | null | undefined): string {
     if (value === null || value === undefined || isNaN(value)) {
-      return 'N/A';
+      return '';
     }
 
-    // Auto-detect if compact format should be used
-    if (this.shouldUseCompactFormat(value)) {
-      return this.formatSmart(value, context);
+    const numValue = Math.abs(value);
+
+    if (numValue >= this.thresholds.quadrillion) return this.suffixes.quadrillion;
+    if (numValue >= this.thresholds.trillion) return this.suffixes.trillion;
+    if (numValue >= this.thresholds.billion) return this.suffixes.billion;
+    if (numValue >= this.thresholds.million) return this.suffixes.million;
+    if (numValue >= this.thresholds.thousand) return this.suffixes.thousand;
+    return '';
+  }
+
+  /**
+   * Parse a formatted string back to number
+   * Useful for user input processing
+   */
+  static parseFormatted(formattedString: string): number | null {
+    if (!formattedString || formattedString === 'N/A') {
+      return null;
     }
+
+    // Remove currency symbols and commas
+    const cleanString = formattedString.replace(/[$,\s]/g, '');
     
-    // For smaller values, use detailed format
-    return this.formatDetailed(value);
+    // Extract number and suffix
+    const match = cleanString.match(/^(-?\d+\.?\d*)([KMBTQ])?$/i);
+    if (!match) {
+      return null;
+    }
+
+    const [, numberStr, suffix] = match;
+    const number = parseFloat(numberStr);
+
+    if (isNaN(number)) {
+      return null;
+    }
+
+    // Apply multiplier based on suffix
+    const multiplier = suffix ? {
+      'K': this.thresholds.thousand,
+      'M': this.thresholds.million,
+      'B': this.thresholds.billion,
+      'T': this.thresholds.trillion,
+      'Q': this.thresholds.quadrillion,
+    }[suffix.toUpperCase()] : 1;
+
+    return number * multiplier;
   }
 }
 
-// Export convenience functions for backward compatibility
-export const formatFinancialCurrency = (value: number | null | undefined, options?: FormatOptions) => 
+// Export convenience functions for easier usage
+export const formatFinancialCompact = (value: number | null | undefined, options?: Parameters<typeof FinancialFormatter.formatCompact>[1]) =>
   FinancialFormatter.formatCompact(value, options);
 
-export const formatFinancialDetailed = (value: number | null | undefined, options?: FormatOptions) => 
+export const formatFinancialDetailed = (value: number | null | undefined, options?: Parameters<typeof FinancialFormatter.formatDetailed>[1]) =>
   FinancialFormatter.formatDetailed(value, options);
 
-export const formatFinancialSmart = (value: number | null | undefined, context: 'card' | 'chart' | 'table' | 'report' = 'card', options?: FormatOptions) => 
+export const formatFinancialSmart = (value: number | null | undefined, context: Parameters<typeof FinancialFormatter.formatSmart>[1], options?: Parameters<typeof FinancialFormatter.formatSmart>[2]) =>
   FinancialFormatter.formatSmart(value, context, options);
 
-export const formatFinancialPercent = (value: number | null | undefined, decimals?: number, showSign?: boolean) => 
-  FinancialFormatter.formatPercent(value, decimals, showSign);
+export const formatFinancialPercent = (value: number | null | undefined, options?: Parameters<typeof FinancialFormatter.formatPercent>[1]) =>
+  FinancialFormatter.formatPercent(value, options);
+
+export const getAllFinancialFormats = (value: number | null | undefined, options?: Parameters<typeof FinancialFormatter.getAllFormats>[1]) =>
+  FinancialFormatter.getAllFormats(value, options);
 
 // Default export
 export default FinancialFormatter;

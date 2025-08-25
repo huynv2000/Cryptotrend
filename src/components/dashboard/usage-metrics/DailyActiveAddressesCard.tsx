@@ -28,7 +28,7 @@ export default function DailyActiveAddressesCard({
   onClick
 }: DailyActiveAddressesCardProps) {
   // Only use real data - no mock data
-  const sparklineData = data && data.historicalData ? data.historicalData : null;
+  const sparklineData = null; // historicalData is not available in MetricValue type
   
   return (
     <EnhancedMetricCard
@@ -43,8 +43,8 @@ export default function DailyActiveAddressesCard({
       icon={<Users className="h-5 w-5 text-blue-500" />}
       formatType="number"
       isPositiveGood={true}
-      showSparkline={!!sparklineData}
-      sparklineData={sparklineData}
+      showSparkline={false}
+      sparklineData={undefined}
       className="hover:border-blue-500/30"
     />
   );

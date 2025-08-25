@@ -6,13 +6,13 @@ import { cacheService } from '@/lib/cache-service';
 
 interface UseTVLHistoryOptions {
   coinId: string;
-  timeframe?: '24H' | '7D' | '30D' | '90D';
-  enabled?: boolean;
-  cacheKey?: string;
-  refetchInterval?: number;
-  retryCount?: number;
-  onSuccess?: (data: TVLDataPoint[]) => void;
-  onError?: (error: Error) => void;
+  timeframe?: '24H' | '7D' | '30D' | '90D' | undefined;
+  enabled?: boolean | undefined;
+  cacheKey?: string | undefined;
+  refetchInterval?: number | undefined;
+  retryCount?: number | undefined;
+  onSuccess?: ((data: TVLDataPoint[]) => void) | undefined;
+  onError?: ((error: Error) => void) | undefined;
 }
 
 interface UseTVLHistoryReturn {

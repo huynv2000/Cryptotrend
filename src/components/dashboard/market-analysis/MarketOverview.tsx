@@ -65,9 +65,11 @@ export default function MarketOverview({ data, isLoading }: MarketOverviewProps)
               </div>
               <div className={cn(
                 "text-sm",
-                data.marketCap?.changePercent >= 0 ? "text-green-500" : "text-red-500"
+                data.marketCap?.changePercent !== null && data.marketCap?.changePercent !== undefined && data.marketCap?.changePercent >= 0 ? "text-green-500" : "text-red-500"
               )}>
-                {data.marketCap?.changePercent >= 0 ? '+' : ''}{data.marketCap?.changePercent.toFixed(2)}%
+                {data.marketCap?.changePercent !== null && data.marketCap?.changePercent !== undefined 
+                  ? `${data.marketCap?.changePercent >= 0 ? '+' : ''}${data.marketCap?.changePercent.toFixed(2)}%`
+                  : 'N/A'}
               </div>
             </div>
             
@@ -129,9 +131,11 @@ export default function MarketOverview({ data, isLoading }: MarketOverviewProps)
               <div className="text-center">
                 <div className={cn(
                   "text-2xl font-bold",
-                  data.priceChange24h?.changePercent >= 0 ? "text-green-500" : "text-red-500"
+                  data.priceChange24h?.changePercent !== null && data.priceChange24h?.changePercent !== undefined && data.priceChange24h?.changePercent >= 0 ? "text-green-500" : "text-red-500"
                 )}>
-                  {data.priceChange24h?.changePercent >= 0 ? '+' : ''}{data.priceChange24h?.changePercent?.toFixed(2) || 0}%
+                  {data.priceChange24h?.changePercent !== null && data.priceChange24h?.changePercent !== undefined 
+                    ? `${data.priceChange24h?.changePercent >= 0 ? '+' : ''}${data.priceChange24h?.changePercent.toFixed(2)}%`
+                    : 'N/A'}
                 </div>
                 <div className="text-xs text-muted-foreground">Price Change 24h</div>
               </div>
@@ -233,9 +237,11 @@ export default function MarketOverview({ data, isLoading }: MarketOverviewProps)
                 <div className="flex items-center space-x-2">
                   <span className={cn(
                     "text-sm font-medium",
-                    sector.performance >= 0 ? "text-green-500" : "text-red-500"
+                    sector.performance !== null && sector.performance !== undefined && sector.performance >= 0 ? "text-green-500" : "text-red-500"
                   )}>
-                    {sector.performance >= 0 ? '+' : ''}{sector.performance.toFixed(2)}%
+                    {sector.performance !== null && sector.performance !== undefined 
+                      ? `${sector.performance >= 0 ? '+' : ''}${sector.performance.toFixed(2)}%`
+                      : 'N/A'}
                   </span>
                   <Badge variant="outline" className="text-xs">
                     ${((sector.marketCap || 0) / 1e9).toFixed(1)}B

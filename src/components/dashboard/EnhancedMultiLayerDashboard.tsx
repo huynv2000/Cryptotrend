@@ -1277,15 +1277,15 @@ export function EnhancedMultiLayerDashboard({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <p><strong>🟢 BUY Signal:</strong> Khi đa số chỉ báo chỉ ra cơ hội mua</p>
-                        <p class="text-xs text-purple-600 mt-1">Điều kiện: MVRV thấp, Fear & Greed thấp, RSI oversold</p>
+                        <p className="text-xs text-purple-600 mt-1">Điều kiện: MVRV thấp, Fear & Greed thấp, RSI oversold</p>
                       </div>
                       <div>
                         <p><strong>🔴 SELL Signal:</strong> Khi đa số chỉ báo chỉ ra rủi ro</p>
-                        <p class="text-xs text-purple-600 mt-1">Điều kiện: MVRV cao, Fear & Greed cao, RSI overbought</p>
+                        <p className="text-xs text-purple-600 mt-1">Điều kiện: MVRV cao, Fear & Greed cao, RSI overbought</p>
                       </div>
                       <div>
                         <p><strong>🟡 HOLD Signal:</strong> Khi thị trường không có xu hướng rõ</p>
-                        <p class="text-xs text-purple-600 mt-1">Điều kiện: Chỉ báo hỗn hợp, không consensus</p>
+                        <p className="text-xs text-purple-600 mt-1">Điều kiện: Chỉ báo hỗn hợp, không consensus</p>
                       </div>
                       <div>
                         <p><strong>📊 Confidence Level:</strong> Độ tin cậy của signal</p>
@@ -1304,8 +1304,8 @@ export function EnhancedMultiLayerDashboard({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <h5 className="font-medium text-orange-700 mb-2">🟢 LOW RISK</h5>
-                        <p class="text-orange-800">Khi đa số chỉ báo ở vùng an toàn:</p>
-                        <ul class="text-xs text-orange-700 mt-1 space-y-1">
+                        <p className="text-orange-800">Khi đa số chỉ báo ở vùng an toàn:</p>
+                        <ul className="text-xs text-orange-700 mt-1 space-y-1">
                           <li>• MVRV &lt; 1.2</li>
                           <li>• Fear & Greed &lt; 30</li>
                           <li>• RSI 30-70</li>
@@ -1314,8 +1314,8 @@ export function EnhancedMultiLayerDashboard({
                       </div>
                       <div>
                         <h5 className="font-medium text-orange-700 mb-2">🟡 MEDIUM RISK</h5>
-                        <p class="text-orange-800">Khi chỉ báo hỗn hợp:</p>
-                        <ul class="text-xs text-orange-700 mt-1 space-y-1">
+                        <p className="text-orange-800">Khi chỉ báo hỗn hợp:</p>
+                        <ul className="text-xs text-orange-700 mt-1 space-y-1">
                           <li>• MVRV 1.2-1.8</li>
                           <li>• Fear & Greed 30-70</li>
                           <li>• RSI near extremes</li>
@@ -1324,7 +1324,7 @@ export function EnhancedMultiLayerDashboard({
                       </div>
                       <div>
                         <h5 className="font-medium text-orange-700 mb-2">🔴 HIGH RISK</h5>
-                        <p class="text-orange-800">Khi chỉ báo cực đoan:</p>
+                        <p className="text-orange-800">Khi chỉ báo cực đoan:</p>
                         <ul className="text-xs text-orange-700 mt-1 space-y-1">
                           <li>• MVRV &gt; 2.0</li>
                           <li>• Fear &amp; Greed &gt; 80</li>
